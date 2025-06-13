@@ -1,0 +1,6 @@
+biopython>=1.77
+gunicorn
+plotly
+dash[dev]==2.*
+
+colour==0.1.5
