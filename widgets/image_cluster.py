@@ -148,7 +148,7 @@ class ImageGraph:
             # print(f"{x} | {x_normalised}")
             # print(f"{y} | {y_normalised}")
             element = {
-                "data": {"id": f"node{i}", "label": f"{i}", "bg": thumb},
+                "data": {"id": f"node{i}", "label": f"{i}", "bg": thumb, "path": path},
                 "position": {"x": x_normalised, "y": y_normalised},
                 "grabbable": True,
                 # 'style': {
@@ -208,14 +208,23 @@ class ImageGraph:
         return f"data:image/png;base64,{encoded}"
 
     def register_callback(self):
-        @callback(Output("dummy3", "children"), Input("pca-graph", "tapNode"))
+        @callback(Output("dummy3", "children"), Input("pca-graph", "dragNode"))
         def print_node(node):
-            print(node)
+            print(node["position"])
+            print(node["data"]["id"])
+            x = (node["position"]["x"] / self.size[0]) * self.max_x + self.min_x
+            y = (node["position"]["y"] / self.size[1]) * self.max_y + self.min_y
+            self.new_positions[node["data"]["path"]] = np.array([x, y])
+
             return "kaas"
 
-        @callback(Output("output", "children"), Input("node-positions", "data"))
+        @callback(
+            Output("output", "children"),
+            Input("node-positions", "data"),
+            prevent_initial_call=True,
+        )
         def update_positions(elements):
-            print(elements)
+            # print(elements)
             # print(self.cyto.mouseoverNodeData())
             # for i, (e, e_new) in enumerate(zip(self.elements, elements)):
             #    # print(e["position"], end=" | ")
@@ -250,10 +259,10 @@ class ImageGraph:
             prevent_initial_call=True,
         )
         def submit_change(_) -> list:
-            print(self.new_positions)
+            # print(self.new_positions)
             self.si.update_model(updated_positions=self.new_positions, epochs=5)
             self.new_positions = {}
-            print(self.new_positions)
+            # print(self.new_positions)
             self.set_elements()
             return self.elements
 
@@ -285,6 +294,7 @@ class ImageGraph:
         clientside_callback(
             """
             function(n_intervals) {
+                
                 const cy = document.querySelector('#pca-graph')._cyreg.cy;
                 if (!cy) {
                     return window.dash_clientside.no_update;
@@ -331,15 +341,7 @@ class ImageGraph:
                     }, 200);
                 });
 
-                cy.on('tapstart', 'node', (event) => {
-                    const nodeObject = this.generateNode(event);
-                    this.props.setProps(
-                        {
-                        tapNode: nodeObject
-
-                        }
-                    )
-                } 
+               
 
                 // Initial sizing on registration
                 updateNodeSizes();
