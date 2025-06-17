@@ -4,7 +4,6 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 import base64
-import os
 from tqdm import tqdm
 from pathlib import Path
 from dash import dcc, Output, Input, State, callback, clientside_callback, html
@@ -23,7 +22,7 @@ class ImageGraph:
         graph_id: str,
         imageSi,
         data_folder: Path = Path("./data/"),
-        size=(1920, 800),
+        size=(1600, 800),
     ):
         self.image_folder = img_folder
         self.graph_id = graph_id
@@ -49,15 +48,48 @@ class ImageGraph:
 
         self.graph = html.Div(
             [
-                self.cyto,
-                html.Div(id="output", style={"display": "none"}),
-                dcc.Interval(id="interval", interval=1000, max_intervals=0),
+                html.Div(
+                    children=[
+                        html.Div(
+                            children=[
+                                self.cyto,
+                                html.Div(id="output", style={"display": "none"}),
+                                dcc.Interval(
+                                    id="interval", interval=1000, max_intervals=0
+                                ),
+                            ],
+                            style={"padding": 10, "width": "90%"},
+                        ),
+                        html.Div(
+                            children=[
+                                html.Button(
+                                    "Submit Changes",
+                                    id="submit-val",
+                                    n_clicks=0,
+                                    style={
+                                        "width": "100%",
+                                        "backgroundColor": "#EDC9FF",
+                                        "height": "40px",
+                                    },
+                                ),
+                            ],
+                            style={
+                                "padding": 10,
+                                "flex": 1,
+                                "width": "10%",
+                                "backgroundColor": "#FED4E7",
+                            },
+                        ),
+                    ],
+                    style={"display": "flex", "flexDirection": "row"},
+                ),
+                html.Div(children="History Slider"),
                 dcc.Slider(0, 0, 1, value=0, id="history_slider"),
-                html.Button("Submit", id="submit-val", n_clicks=0),
                 html.Div(id="dummy", style={"display": "none"}),
                 html.Div(id="dummy2", style={"display": "none"}),
                 html.Div(id="dummy3", style={"display": "none"}),
-            ]
+            ],
+            style={"display": "flex", "flexDirection": "column"},
         )
 
         self.new_positions: dict[str, np.ndarray] = {}
@@ -76,7 +108,7 @@ class ImageGraph:
         self.cyto = cyto.Cytoscape(
             id="pca-graph",
             elements=self.elements,
-            style={"width": f"{self.size[0]}px", "height": f"{self.size[1]}px"},
+            style={"width": "100%", "height": f"{self.size[1]}px"},
             stylesheet=stylesheet,
             layout={"name": "preset"},
             userZoomingEnabled=True,

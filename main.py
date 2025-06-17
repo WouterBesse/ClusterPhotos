@@ -1,10 +1,12 @@
 from dash import Dash, html
 from widgets.image_cluster import ImageGraph
+from widgets.tabs import Tabs
 from pathlib import Path
 from invLearning import ImageSI
 
 
 def main(imagePath: Path) -> None:
+    canvasID = "thecanvas"
     imageSI = ImageSI(imagePath, 40)
     print("Shape of projection:", imageSI.projection.shape)
 
@@ -14,9 +16,34 @@ def main(imagePath: Path) -> None:
     )
     graph_component.register_callback()
 
-    app.layout = html.Div([html.H2("Clustered Image Graph"), graph_component.graph])
+    tabs = Tabs([graph_component], canvasID)
 
-    app.run_server(debug=True)
+    app.layout = html.Div(
+        [
+            html.H2(
+                "Clustered Image Graph",
+                style={
+                    "backgroundColor": "#FED4E7",
+                    "margin": 0,
+                    "height": "80px",
+                    "padding": 20,
+                },
+            ),
+            tabs.tabs,
+            # html.Div(id=canvasID),
+            # graph_component.graph,
+        ],
+        style={
+            "backgroundColor": "#FEEBF4",
+            "height": "100vh",
+            "display": "flex",
+            "flexDirection": "column",
+            "padding": 0,
+            "margin": 0,
+        },
+    )
+
+    app.run(debug=True)
 
 
 if __name__ == "__main__":
