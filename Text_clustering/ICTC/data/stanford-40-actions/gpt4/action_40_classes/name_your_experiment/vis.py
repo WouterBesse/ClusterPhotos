@@ -10,9 +10,11 @@ import subprocess
 import glob
 from datetime import datetime
 
+home_path = os.getenv('HOME_PATH')
+
 class JobManager:
     def __init__(self,
-                 job_file_path='/home/scur0274/Text_clustering/ICTC/step2a.job',
+                 job_file_path='/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/step2a.job',
                  output_dir='outputs_train'):
         self.job_file_path = job_file_path
         self.output_dir = output_dir
@@ -130,7 +132,7 @@ def load_data():
     )
     df['image_id'] = range(len(df))
     
-    IMAGE_FOLDER = '/home/scur0274/Text_clustering/data/stanford-40-actions/JPEGImages'
+    IMAGE_FOLDER = '/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/data/stanford-40-actions/JPEGImages'
     def encode_image(path):
         try:
             if not os.path.isfile(path): return ''

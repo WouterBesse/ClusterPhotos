@@ -8,3 +8,4 @@ widgets/__pycache__
 /widgets/__pycache__
 ./widgets/__pycache__/
 *.pyc
+.env
