@@ -6,13 +6,13 @@ Make sure to install the local modified dash-cytoscape by either running `pip in
 
 # Text Clustering 
 
-# Action 40 Classes Visualization
+# Custom Data Clustering Visualization
 
-This project provides a visualization interface for action classification data from the Stanford 40 Actions dataset, processed and clustered using GPT-4-based methods.
+This project provides a visualization interface for clustering your own custom dataset using an arbitrary filter criterion.
 
 ## ⚠️ Environment Requirement
 
-**Important:** This project only works on **Snellius** (SURF's HPC cluster). Ensure you are on Snellius before proceeding.
+**Important:** This project only works on **Snellius** (SURF's HPC cluster). Ensure you are logged into Snellius before proceeding.
 
 ## 🧪 Running the Visualization
 
@@ -22,31 +22,25 @@ This project provides a visualization interface for action classification data f
 3. Run the visualization script:  
    `python vis.py`  
 
-This will launch the interface to explore clustering results of the Stanford-40 Actions dataset.
+This will launch the interface allowing you to:
+- Apply a custom filter (e.g. by keyword, date range, user ID, etc.)  
+- View clusters generated based on that filter
 
 ## 📦 Dependencies
 
-Ensure the following Python packages are installed in your Snellius environment:  
-matplotlib, seaborn, numpy, pandas, scikit-learn, flask.  
-Install them via pip: `pip install matplotlib seaborn numpy pandas scikit-learn flask`
+All required Python packages are listed in the `requirements.txt` file located in the `Text_clustering` folder. Install them with:  
+`pip install -r /home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/requirements.txt`
 
 ## 📁 Project Structure
 
     ClusterPhotos/
         Text_clustering/
+            requirements.txt
             ICTC/
                 data/
-                    stanford-40-actions/
+                    stanford-40-actions/      ← you can ignore or repurpose this folder
                         gpt4/
                             action_40_classes/
                                 name_your_experiment/
                                     vis.py
-
-## 📌 Notes
-
-- Replace `name_your_experiment` with your actual experiment folder name.  
-- Ensure any data files required by `vis.py` are present in the experiment directory.
-
-## 📄 License
-
-This repository is intended for academic and research purposes only.
+                                    your_custom_data.csv
