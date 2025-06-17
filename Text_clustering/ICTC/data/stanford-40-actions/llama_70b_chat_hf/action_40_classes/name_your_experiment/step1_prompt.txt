@@ -1,0 +1,11 @@
+Analyze the following image and provide a rich, well-structured description that covers:
+
+Weather & climate: What are the atmospheric conditions (sunny, overcast, rainy, hot, cold, etc.)?
+
+People: Are there any people? If so, how many, what are they doing, how are they dressed? If none, explicitly note the absence.
+
+Location: Where does this scene appear to take place (city, countryside, indoors, landmark cues)?
+
+Activity: What’s happening in the scene—what actions or events are taking place?
+
+Please weave these details into a single, coherent paragraph that gives the reader a vivid sense of the image.

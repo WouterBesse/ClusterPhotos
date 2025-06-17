@@ -1,0 +1,36 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+[2025-06-17 19:03:18,652] [INFO] [real_accelerator.py:110:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+python-dotenv could not parse statement starting at line 1
+python-dotenv could not parse statement starting at line 1
+Traceback (most recent call last):
+  File "/gpfs/home3/scur0274/Text_clustering/ICTC/step2a.py", line 44, in <module>
+    with open(args.step1_result_path, "r") as answer_file:
+FileNotFoundError: [Errno 2] No such file or directory: '/home/scur0274/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/step1_result.jsonl'
+
+JOB STATISTICS
+==============
+Job ID: 12462499
+Cluster: snellius
+User/Group: scur0274/scur0274
+State: FAILED (exit code 1)
+Nodes: 1
+Cores per node: 18
+CPU Utilized: 00:00:10
+CPU Efficiency: 2.92% of 00:05:42 core-walltime
+Job Wall-clock time: 00:00:19
+Memory Utilized: 1.47 MB
+Memory Efficiency: 0.00% of 120.00 GB (120.00 GB/node)

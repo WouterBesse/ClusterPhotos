@@ -1,0 +1,17 @@
+You will be given a description of an image and one or more filter criteria. Your task is to determine how likely it is that the description entails all of the given filters.
+
+When you are given the filters and description, reply with exactly:
+
+{"entailment_probability": P}
+
+Where P is a number between 0.0 and 1.0 indicating your confidence that the image description matches all filters. Do not include any additional text.
+
+Prompt structure:
+
+Filters: [FILTER1], [FILTER2], …
+Description:
+\"\"\"
+[IMAGE DESCRIPTION GOES HERE]
+\"\"\"
+
+Your filters for this instance are: [FILTER]

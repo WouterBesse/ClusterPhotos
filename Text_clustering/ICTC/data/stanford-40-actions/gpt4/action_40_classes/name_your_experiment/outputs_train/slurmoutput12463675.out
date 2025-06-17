@@ -1,0 +1,52 @@
+============================================================================================== 
+Warning! Mixing Conda and module environments may lead to corruption of the
+user environment. 
+We do not recommend users mixing those two environments unless absolutely
+necessary. Note that 
+SURF does not provide any support for Conda environment.
+For more information, please refer to our software policy page:
+https://servicedesk.surf.nl/wiki/display/WIKI/Software+policy+Snellius#SoftwarepolicySnellius-UseofAnacondaandMinicondaenvironmentsonSnellius 
+
+Remember that many packages have already been installed on the system and can
+be loaded using 
+the 'module load <package__name>' command. If you are uncertain if a package is
+already available 
+on the system, please use 'module avail' or 'module spider' to search for it.
+============================================================================================== 
+[2025-06-17 20:08:46,039] [INFO] [real_accelerator.py:110:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:17,  1.09it/s] 10%|█         | 2/20 [00:01<00:12,  1.45it/s] 15%|█▌        | 3/20 [00:02<00:10,  1.57it/s] 20%|██        | 4/20 [00:02<00:10,  1.55it/s] 25%|██▌       | 5/20 [00:03<00:09,  1.67it/s] 30%|███       | 6/20 [00:03<00:08,  1.66it/s] 35%|███▌      | 7/20 [00:04<00:07,  1.77it/s] 40%|████      | 8/20 [00:04<00:07,  1.69it/s] 45%|████▌     | 9/20 [00:05<00:06,  1.76it/s] 50%|█████     | 10/20 [00:06<00:05,  1.79it/s] 55%|█████▌    | 11/20 [00:06<00:04,  1.82it/s] 60%|██████    | 12/20 [00:09<00:09,  1.23s/it] 65%|██████▌   | 13/20 [00:10<00:07,  1.07s/it] 70%|███████   | 14/20 [00:10<00:05,  1.10it/s] 75%|███████▌  | 15/20 [00:11<00:04,  1.08it/s] 80%|████████  | 16/20 [00:12<00:03,  1.11it/s] 85%|████████▌ | 17/20 [00:12<00:02,  1.30it/s] 90%|█████████ | 18/20 [00:14<00:02,  1.07s/it] 95%|█████████▌| 19/20 [00:14<00:00,  1.15it/s]100%|██████████| 20/20 [00:15<00:00,  1.31it/s]100%|██████████| 20/20 [00:15<00:00,  1.29it/s]
+Image file-IMG-20250613-WA0009.jpg; {"entailment_probability": 0.0}
+Image file-IMG-20250613-WA0012.jpg; {"entailment_probability": 0.0}
+Image file-IMG-20250613-WA0011.jpg; {"entailment_probability": 1.0}
+Image file-IMG-20250613-WA0005.jpg; {"entailment_probability": 1.0}
+Image file-IMG-20250613-WA0014.jpg; {"entailment_probability": 1.0}
+Image file-IMG-20250613-WA0007.jpg; {"entailment_probability": 0.0}
+Image file-IMG-20250613-WA0013.jpg; {"entailment_probability": 1.0}
+Image file-IMG-20250613-WA0006.jpg; {"entailment_probability": 0.0}
+Image file-IMG-20250613-WA0020.jpg; {"entailment_probability": 0.0}
+Image file-IMG-20250613-WA0008.jpg; {"entailment_probability": 0.0}
+Image file-IMG-20250613-WA0019.jpg; {"entailment_probability": 0.0}
+Image file-IMG-20250613-WA0016.jpg; {"entailment_probability": 0.0}
+Image file-IMG-20250613-WA0022.jpg; {"entailment_probability": 0.0}
+Image file-IMG-20250613-WA0017.jpg; {"entailment_probability": 0.0}
+Image file-IMG-20250613-WA0015.jpg; {"entailment_probability": 1.0}
+Image file-IMG-20250613-WA0021.jpg; {"entailment_probability": 0.0}
+Image file-IMG-20250613-WA0004.jpg; {"entailment_probability": 1.0}
+Image file-IMG-20250613-WA0003.jpg; {"entailment_probability": 0.0}
+Image file-IMG-20250613-WA0010.jpg; {"entailment_probability": 0.8}
+Image file-IMG-20250613-WA0018.jpg; {"entailment_probability": 1.0}
+
+JOB STATISTICS
+==============
+Job ID: 12463675
+Cluster: snellius
+User/Group: scur0274/scur0274
+State: RUNNING
+Nodes: 1
+Cores per node: 18
+CPU Utilized: 00:00:00
+CPU Efficiency: 0.00% of 00:10:30 core-walltime
+Job Wall-clock time: 00:00:35
+Memory Utilized: 0.00 MB
+Memory Efficiency: 0.00% of 120.00 GB (120.00 GB/node)
+WARNING: Efficiency statistics can only be obtained after the job has ended as seff tool is based on the accounting database data.

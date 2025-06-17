@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu_a100
+#SBATCH --gpus=1
+#SBATCH --job-name=step2
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=18
+#SBATCH --time=03:00:00
+#SBATCH --output=outputs_train/slurmoutput%A.out
+
+module purge
+module load 2023
+module load Anaconda3/2023.07-2
+
+cd /home/scur0274/Text_clustering/ICTC
+source activate ictc
+
+python step1/blip2/model.py \
+  --dataset stanford-40-actions \
+  --cl_criteria action
