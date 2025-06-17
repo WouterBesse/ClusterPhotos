@@ -6,7 +6,16 @@ from sklearn.decomposition import PCA
 import base64
 from tqdm import tqdm
 from pathlib import Path
-from dash import dcc, Output, Input, State, callback, clientside_callback, html
+from dash import (
+    dcc,
+    Output,
+    Input,
+    State,
+    callback,
+    clientside_callback,
+    html,
+    no_update,
+)
 import dash_cytoscape as cyto
 from PIL.ExifTags import TAGS
 import io
@@ -40,6 +49,8 @@ class ImageGraph:
         self.thumbnail_dir.mkdir(exist_ok=True)
         self.checkpoint_dir.mkdir(exist_ok=True)
 
+        self._progress_generator = None
+
         self.generate_thumbnails()
         self.set_elements()
 
@@ -48,29 +59,75 @@ class ImageGraph:
 
         self.graph = html.Div(
             [
+                dcc.Store(id="progress-store", data=0),
+                dcc.Interval(id="progress-interval", interval=6000, disabled=True),
                 html.Div(
                     children=[
                         html.Div(
                             children=[
-                                self.cyto,
-                                html.Div(id="output", style={"display": "none"}),
-                                dcc.Interval(
-                                    id="interval", interval=1000, max_intervals=0
+                                html.Div(
+                                    id="graph-loading-output",
+                                    children=[
+                                        self.cyto,
+                                        html.Div(
+                                            id="progress-bar-container",
+                                            style={
+                                                "position": "absolute",
+                                                "top": "50%",
+                                                "left": "50%",
+                                                "transform": "translate(-50%, -50%)",
+                                                "width": "50%",
+                                                "display": "none",  # Hidden by default
+                                                "backgroundColor": "#f3f3f3",
+                                                "border": "1px solid #ccc",
+                                                "borderRadius": "5px",
+                                            },
+                                            children=[
+                                                html.Div(
+                                                    id="progress-bar",
+                                                    style={
+                                                        "width": "0%",
+                                                        "height": "30px",
+                                                        "backgroundColor": "#4CAF50",
+                                                        "textAlign": "center",
+                                                        "lineHeight": "30px",
+                                                        "color": "white",
+                                                    },
+                                                )
+                                            ],
+                                        ),
+                                        dcc.Interval(
+                                            id="interval",
+                                            interval=1000,
+                                            max_intervals=0,
+                                        ),
+                                    ],
                                 ),
                             ],
                             style={"padding": 10, "width": "90%"},
                         ),
                         html.Div(
                             children=[
-                                html.Button(
-                                    "Submit Changes",
-                                    id="submit-val",
-                                    n_clicks=0,
-                                    style={
-                                        "width": "100%",
-                                        "backgroundColor": "#EDC9FF",
-                                        "height": "40px",
-                                    },
+                                dcc.Loading(
+                                    id="loading-1",
+                                    type="dot",
+                                    children=[
+                                        html.Div(
+                                            id="loading-output",
+                                            children=[
+                                                html.Button(
+                                                    "Submit Changes",
+                                                    id="submit-val",
+                                                    n_clicks=0,
+                                                    style={
+                                                        "width": "100%",
+                                                        "backgroundColor": "#EDC9FF",
+                                                        "height": "40px",
+                                                    },
+                                                ),
+                                            ],
+                                        ),
+                                    ],
                                 ),
                             ],
                             style={
@@ -206,67 +263,177 @@ class ImageGraph:
             return ""
 
         @callback(
-            # Output("pca-graph", "elements"),
-            Output("dummy2", "children"),
+            Output("submit-val", "disabled"),
+            Output("progress-interval", "disabled"),
+            Output("progress-bar-container", "style"),
             Input("submit-val", "n_clicks"),
             State("history_slider", "value"),
             prevent_initial_call=True,
         )
-        def submit_change(_, slider_val) -> str:
-            print("Submitting Changes")
-            print(self.new_positions)
-            print(self.si.image_paths[0])
+        def start_processing(n_clicks, slider_val):
             self.si.load_checkpoint(self.checkpoint_dir / f"{slider_val}.pth")
-            self.si.update_model(updated_positions=self.new_positions, epochs=5)
-            self.new_positions = {}
-            self.set_elements()
-            return ""
+            self._progress_generator = self.si.update_model(
+                updated_positions=self.new_positions, epochs=5
+            )
+            style = {
+                "position": "absolute",
+                "top": "50%",
+                "left": "50%",
+                "transform": "translate(-50%, -50%)",
+                "width": "50%",
+                "display": "block",
+                "backgroundColor": "#f3f3f3",
+                "border": "1px solid #ccc",
+                "borderRadius": "5px",
+            }
+            return True, False, style
+
+        @callback(
+            Output("progress-store", "data"),
+            Output("progress-interval", "disabled", allow_duplicate=True),
+            Output("progress-bar-container", "style", allow_duplicate=True),
+            Output("pca-graph", "elements"),
+            Output("submit-val", "disabled", allow_duplicate=True),
+            Input("progress-interval", "n_intervals"),
+            prevent_initial_call=True,
+        )
+        def update_progress(_):
+            try:
+                progress = next(self._progress_generator)
+                return progress, False, no_update, no_update, True
+            except StopIteration:
+                self.new_positions = {}
+                self.set_elements()
+                style = {
+                    "position": "absolute",
+                    "top": "50%",
+                    "left": "50%",
+                    "transform": "translate(-50%, -50%)",
+                    "width": "50%",
+                    "display": "none",
+                    "backgroundColor": "#f3f3f3",
+                    "border": "1px solid #ccc",
+                    "borderRadius": "5px",
+                }
+                return 100, True, style, self.elements, False
+
+        clientside_callback(
+            """
+            function(progress) {
+                const bar = document.getElementById('progress-bar');
+                if (bar) {
+                    bar.style.width = progress + '%';
+                    bar.innerText = Math.round(progress) + '%';
+                }
+                return '';
+            }
+            """,
+            Output("progress-bar", "children"),
+            Input("progress-store", "data"),
+        )
+
+        # @callback(
+        # Output("pca-graph", "elements"),
+        #    Output("loading-output", "children"),
+        # Output("graph-loading-output", "children"),
+        # Input("submit-val", "n_clicks"),
+        # State("history_slider", "value"),
+        # prevent_initial_call=True,
+        # )
+        # def submit_change(_, slider_val) -> tuple[html.Button, list]:
+        # print("Submitting Changes")
+        # print(self.new_positions)
+        # print(self.si.image_paths[0])
+        # self.si.load_checkpoint(self.checkpoint_dir / f"{slider_val}.pth")
+        # self.si.update_model(updated_positions=self.new_positions, epochs=5)
+        # self.new_positions = {}
+        # self.set_elements()
+        # return (
+        #    html.Button(
+        #    "Submit Changes",
+        #    id="submit-val",
+        #    n_clicks=0,
+        #    style={
+        #        "width": "100%",
+        #        "backgroundColor": "#EDC9FF",
+        #        "height": "40px",
+        #    },
+        # ),
+        #    [
+        #        self.cyto,
+        #        dcc.Interval(
+        #        id="interval",
+        #        interval=1000,
+        #        max_intervals=0,
+        #    ),
+        #    ],
+        # )
+
+        #        @callback(
+        #    Output("history_slider", "max"),
+        #    Output("history_slider", "value"),
+        #    Input("loading-output", "children"),
+        #    State("history_slider", "value"),
+        #    State("history_slider", "max"),
+        #    prevent_initial_call=True,
+        # )
+        # def update_slider(_, value: int, max: int) -> tuple[int, int]:
+        #    """If history depth is changed, change slider to match."""
+        #    print("Updating Slider")
+        #    new_max = value + 1
+        #
+        #    og_final_checkpoint = (
+        #        self.checkpoint_dir / f"{len(self.el_history) - 1}.pth"
+        #     )
+        #
+        #    if len(self.el_history) is not new_max:
+        #        idcs_to_remove = range(value, len(self.el_history) - 2)
+        #        print(idcs_to_remove)
+        #        # Remove overwritten history in el_history and remove the checkpoints.
+        #        self.el_history = [
+        #            els
+        #           for i, els in enumerate(self.el_history)
+        #           if i not in idcs_to_remove
+        #       ]
+        #                for i in idcs_to_remove:
+        #           old_chkpt = self.checkpoint_dir / f"{i}.pth"
+        #            old_chkpt.unlink()
+
+        # Make sure that the newly created checkpoint is correctly numbered
+        #       og_final_checkpoint.rename(
+        #        self.checkpoint_dir / f"{len(self.el_history) - 1}.pth"
+        #    )
+
+        #   return new_max, new_max
+
+        # @callback(
+        #    Output("pca-graph", "elements"),
+        #    Input("history_slider", "value"),
+        #    prevent_initial_call=True,
+        # )
+        # def set_elements_from_history(step: int) -> list[dict[str, dict | bool]]:
+        #    """If history slider is changed, set graph to appropriate view."""
+        #    print("Setting elements from history")
+        #    elements = self.el_history[step]
+        #    return elements
 
         @callback(
             Output("history_slider", "max"),
             Output("history_slider", "value"),
-            Input("dummy2", "children"),
+            Input("submit-val", "n_clicks"),
             State("history_slider", "value"),
-            State("history_slider", "max"),
             prevent_initial_call=True,
         )
-        def update_slider(_, value: int, max: int) -> tuple[int, int]:
-            """If history depth is changed, change slider to match."""
-            print("Updating Slider")
-            new_max = value + 1
-
-            og_final_checkpoint = (
-                self.checkpoint_dir / f"{len(self.el_history) - 1}.pth"
-            )
-
-            if len(self.el_history) is not new_max:
-                idcs_to_remove = range(value, len(self.el_history) - 2)
-                print(idcs_to_remove)
-                # Remove overwritten history in el_history and remove the checkpoints.
-                self.el_history = [
-                    els
-                    for i, els in enumerate(self.el_history)
-                    if i not in idcs_to_remove
-                ]
-                for i in idcs_to_remove:
-                    old_chkpt = self.checkpoint_dir / f"{i}.pth"
-                    old_chkpt.unlink()
-
-                # Make sure that the newly created checkpoint is correctly numbered
-                og_final_checkpoint.rename(
-                    self.checkpoint_dir / f"{len(self.el_history) - 1}.pth"
-                )
-
+        def update_slider(_, value):
+            new_max = len(self.el_history) - 1
             return new_max, new_max
 
         @callback(
-            Output("pca-graph", "elements"),
+            Output("pca-graph", "elements", allow_duplicate=True),
             Input("history_slider", "value"),
             prevent_initial_call=True,
         )
-        def set_elements_from_history(step: int) -> list[dict[str, dict | bool]]:
-            """If history slider is changed, set graph to appropriate view."""
-            print("Setting elements from history")
+        def set_elements_from_history(step: int):
             elements = self.el_history[step]
             return elements
 

@@ -88,6 +88,7 @@ class ImageSI:
 
         self.model.train()
         for epoch in range(epochs):
+            yield (epoch + 1) / epochs * 100
             total_loss = 0
             for anchor, positive, negative in tqdm(
                 dataloader, desc=f"Epoch {epoch + 1}/{epochs}"
@@ -112,6 +113,9 @@ class ImageSI:
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item()
+                yield (epoch + 1) / epochs * 100
+
+            yield (epoch + 1) / epochs * 100
 
             avg_loss = total_loss / len(dataloader)
             print(f"Epoch {epoch + 1}/{epochs}, Average Loss: {avg_loss:.4f}")
