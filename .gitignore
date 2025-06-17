@@ -4,4 +4,7 @@
 /__pycache__
 cuda-repo-ubuntu2204-12-8-local_12.8.0-570.86.10-1_amd64.deb
 cuda-ubuntu2204.pin.1
-/widgets/__pycache__/
+widgets/__pycache__
+/widgets/__pycache__
+./widgets/__pycache__/
+*.pyc

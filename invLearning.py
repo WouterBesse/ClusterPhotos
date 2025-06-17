@@ -1,3 +1,4 @@
+from pathlib import Path
 from util import DimensionReducer, load_resnet_feature_extractor, TripletDataset
 import torch
 import torch.nn as nn
@@ -77,6 +78,7 @@ class ImageSI:
                     path, self.projection[self.image_paths.index(path)]
                 )
             )
+        print(current_positions)
 
         # Setup dataset, dataloader, loss, and optimizer
         dataset = TripletDataset(self.image_paths, current_positions)
@@ -119,3 +121,17 @@ class ImageSI:
         self.features = self.extract_all_features()
         self.projection = self.reducer.fit_transform(self.features)
         print("Projection updated.")
+
+    def save_checkpoint(self, path: Path) -> None:
+        checkpoint = {
+            "state_dict": self.model.state_dict(),
+            "projection": self.projection,
+            "features": self.features,
+        }
+        torch.save(checkpoint, path)
+
+    def load_checkpoint(self, path: Path) -> None:
+        checkpoint: dict[str, np.ndarray | dict] = torch.load(path, weights_only=False)
+        self.model.load_state_dict(checkpoint["state_dict"])
+        self.features = checkpoint["features"]
+        self.projection = checkpoint["projection"]

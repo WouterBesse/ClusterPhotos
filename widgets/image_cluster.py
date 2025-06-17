@@ -27,33 +27,42 @@ class ImageGraph:
     ):
         self.image_folder = img_folder
         self.graph_id = graph_id
+        self.data_folder = data_folder
         self.si = imageSi
         self.size = size
+        self.el_history: list[list[dict[str, dict | bool]]] = []
 
         # Make data folder if it doesn't exist yet, this saves us time so we don't have to load all images from disk each time
         if not data_folder.exists():
             data_folder.mkdir()
 
-        npy_path = data_folder / "data.npy.npz"
-        if npy_path.exists():
-            data = np.load(npy_path)
-            self.labels = data["labels"]
-            self.coords = data["coords"]
-            self.paths = data["paths"]
-            self.filenames = data["filenames"]
-            self.timestamps = data["timestamps"]
-        else:
-            self.load_and_cluster_images(npy_path)
-        print("X range:", np.min(self.coords[:, 0]), np.max(self.coords[:, 0]))
-        print("Y range:", np.min(self.coords[:, 1]), np.max(self.coords[:, 1]))
-
         self.thumbnail_dir = data_folder / "thumbnails"
+        self.checkpoint_dir = data_folder / self.graph_id
         self.thumbnail_dir.mkdir(exist_ok=True)
+        self.checkpoint_dir.mkdir(exist_ok=True)
 
+        self.generate_thumbnails()
         self.set_elements()
 
         # Pre-generate thumbnails
-        self.generate_thumbnails()
+        self.create_graph()
+
+        self.graph = html.Div(
+            [
+                self.cyto,
+                html.Div(id="output", style={"display": "none"}),
+                dcc.Interval(id="interval", interval=1000, max_intervals=0),
+                dcc.Slider(0, 0, 1, value=0, id="history_slider"),
+                html.Button("Submit", id="submit-val", n_clicks=0),
+                html.Div(id="dummy", style={"display": "none"}),
+                html.Div(id="dummy2", style={"display": "none"}),
+                html.Div(id="dummy3", style={"display": "none"}),
+            ]
+        )
+
+        self.new_positions: dict[str, np.ndarray] = {}
+
+    def create_graph(self) -> None:
         stylesheet = [
             {
                 "selector": "#pca-graph .cy-node",
@@ -67,7 +76,7 @@ class ImageGraph:
         self.cyto = cyto.Cytoscape(
             id="pca-graph",
             elements=self.elements,
-            style={"width": f"{size[0]}px", "height": f"{size[1]}px"},
+            style={"width": f"{self.size[0]}px", "height": f"{self.size[1]}px"},
             stylesheet=stylesheet,
             layout={"name": "preset"},
             userZoomingEnabled=True,
@@ -76,24 +85,15 @@ class ImageGraph:
             autoungrabify=False,
         )
 
-        self.graph = html.Div(
-            [
-                self.cyto,
-                html.Div(id="output", style={"display": "none"}),
-                html.Div(id="dummy", style={"display": "none"}),
-                dcc.Interval(id="interval", interval=1000, max_intervals=0),
-                html.Button("Submit", id="submit-val", n_clicks=0),
-                html.Div(id="dummy2", style={"display": "none"}),
-                dcc.Store(id="node-positions"),
-                html.Div(id="dummy3", style={"display": "none"}),
-            ]
-        )
-
-        self.new_positions: dict[str, np.ndarray] = {}
+    def pil_image_to_base64(self, img: Image.Image) -> str:
+        buffer = io.BytesIO()
+        img.save(buffer, format="PNG")
+        encoded = base64.b64encode(buffer.getvalue()).decode()
+        return f"data:image/png;base64,{encoded}"
 
     def generate_thumbnails(self, size=(100, 100)):
         """Generate and save thumbnails for all images"""
-        for path in tqdm(self.paths, desc="Generating thumbnails"):
+        for path in tqdm(self.si.image_paths, desc="Generating thumbnails"):
             thumbnail_path = self.thumbnail_dir / f"{Path(path).stem}_thumb.jpg"
             if not thumbnail_path.exists():
                 try:
@@ -104,7 +104,7 @@ class ImageGraph:
                     print(f"Error generating thumbnail for {path}: {e}")
 
     @lru_cache(maxsize=200)
-    def get_thumbnail_base64(self, path) -> tuple[str, tuple[int, int]]:
+    def get_thumbnail_base64(self, path) -> tuple[str, tuple[int, int]] | None:
         """Get cached base64 thumbnail"""
         thumbnail_path = self.thumbnail_dir / f"{Path(path).stem}_thumb.jpg"
         try:
@@ -115,7 +115,7 @@ class ImageGraph:
             print(f"Error loading thumbnail for {path}: {e}")
             return None
 
-    def get_image_timestamp(self, path):
+    def get_image_timestamp(self, path: Path):
         try:
             image = Image.open(path)
             exif = image._getexif()
@@ -131,165 +131,112 @@ class ImageGraph:
 
     def set_elements(self) -> None:
         x_coords: np.ndarray = self.si.projection[:, 0]
-        # print(x_coords)
         y_coords: np.ndarray = self.si.projection[:, 1]
+        print(self.si.projection)
+
         self.min_x = np.min(x_coords)
         self.max_x = np.max(x_coords) - self.min_x
         self.min_y = np.min(y_coords)
         self.max_y = np.max(y_coords) - self.min_y
-        self.elements = []
+
+        x_coords_norm = ((x_coords - self.min_x) / self.max_x) * self.size[0]
+        y_coords_norm = ((y_coords - self.min_y) / self.max_y) * self.size[1]
+
+        self.elements: list[dict[str, dict | bool]] = []
         for i, (path, dims) in enumerate(
-            zip(self.si.image_paths, zip(x_coords.tolist(), y_coords.tolist()))
+            zip(
+                self.si.image_paths, zip(x_coords_norm.tolist(), y_coords_norm.tolist())
+            )
         ):
             thumb, imgdims = self.get_thumbnail_base64(path)
             x, y = dims
-            x_normalised = ((float(x) - self.min_x) / self.max_x) * self.size[0]
-            y_normalised = ((float(y) - self.min_y) / self.max_y) * self.size[1]
-            # print(f"{x} | {x_normalised}")
-            # print(f"{y} | {y_normalised}")
             element = {
                 "data": {"id": f"node{i}", "label": f"{i}", "bg": thumb, "path": path},
-                "position": {"x": x_normalised, "y": y_normalised},
+                "position": {"x": x, "y": y},
                 "grabbable": True,
-                # 'style': {
-                #     'background-image': f'url("{thumb}")',
-                #     'background-fit': 'cover',
-                #     'background-zoom': 'false',
-                #     'width': f'{dims[0]}px',
-                #     'height': f'{dims[1]}px',
-                #     'shape': 'rectangle'
-                # }
             }
             self.elements.append(element)
 
-    def load_and_cluster_images(self, data_path: Path, size=(32, 32), n_clusters=3):
-        features, self.paths, self.filenames, self.timestamps = [], [], [], []
-
-        for filename in tqdm(os.listdir(self.image_folder), desc="Loading files"):
-            if filename.lower().endswith((".png", ".jpg", ".jpeg")):
-                path = os.path.join(self.image_folder, filename)
-                img = Image.open(path).convert("RGB").resize(size)
-                features.append(np.array(img).flatten())
-                self.paths.append(path)
-                self.filenames.append(filename)
-
-                timestamp_str = self.get_image_timestamp(path)
-                if timestamp_str:
-                    try:
-                        # Convert EXIF date string to a sortable number (e.g., timestamp)
-                        dt = datetime.strptime(timestamp_str, "%Y:%m:%d %H:%M:%S")
-                        self.timestamps.append(dt.timestamp())
-                    except:
-                        self.timestamps.append(0)
-                else:
-                    self.timestamps.append(0)
-
-        features = np.array(features)
-        self.labels = KMeans(n_clusters=n_clusters, random_state=42).fit_predict(
-            features
-        )
-        y_coords = PCA(n_components=1).fit_transform(features)
-        self.coords = np.hstack([np.array(self.timestamps).reshape(-1, 1), y_coords])
-
-        np.savez(
-            data_path,
-            labels=self.labels,
-            coords=self.coords,
-            paths=self.paths,
-            filenames=self.filenames,
-            timestamps=self.timestamps,
-        )
-        # self.encoded_imgs = [self.encode_image(p) for p in self.paths]
-
-    def pil_image_to_base64(self, img) -> str:
-        buffer = io.BytesIO()
-        img.save(buffer, format="PNG")
-        encoded = base64.b64encode(buffer.getvalue()).decode()
-        return f"data:image/png;base64,{encoded}"
+        self.el_history.append(self.elements)
+        self.si.save_checkpoint(self.checkpoint_dir / f"{len(self.el_history) - 1}.pth")
 
     def register_callback(self):
-        @callback(Output("dummy3", "children"), Input("pca-graph", "dragNode"))
-        def print_node(node):
-            print(node["position"])
-            print(node["data"]["id"])
+        @callback(
+            Output("dummy3", "children"),
+            Input("pca-graph", "dragNode"),
+            prevent_initial_call=True,
+        )
+        def save_new_node_pos(node):
             x = (node["position"]["x"] / self.size[0]) * self.max_x + self.min_x
             y = (node["position"]["y"] / self.size[1]) * self.max_y + self.min_y
             self.new_positions[node["data"]["path"]] = np.array([x, y])
 
-            return "kaas"
+            return ""
 
         @callback(
-            Output("output", "children"),
-            Input("node-positions", "data"),
+            # Output("pca-graph", "elements"),
+            Output("dummy2", "children"),
+            Input("submit-val", "n_clicks"),
+            State("history_slider", "value"),
             prevent_initial_call=True,
         )
-        def update_positions(elements):
-            # print(elements)
-            # print(self.cyto.mouseoverNodeData())
-            # for i, (e, e_new) in enumerate(zip(self.elements, elements)):
-            #    # print(e["position"], end=" | ")
-            #    or_pos = e["position"]
-            #    new_pos = e_new["position"]
-            #    x_or = or_pos["x"]
-            #    y_or = or_pos["y"]
+        def submit_change(_, slider_val) -> str:
+            print("Submitting Changes")
+            print(self.new_positions)
+            print(self.si.image_paths[0])
+            self.si.load_checkpoint(self.checkpoint_dir / f"{slider_val}.pth")
+            self.si.update_model(updated_positions=self.new_positions, epochs=5)
+            self.new_positions = {}
+            self.set_elements()
+            return ""
 
-            #   x_new = new_pos["x"]
-            #    y_new = new_pos["y"]
-            #    # print(e_new["position"])
-            #    if float(x_or) is not float(x_new) or float(y_or) is not float(y_new):
-            #        pos = new_pos
-            #        print(f"{float(x_or)}, {float(y_or)}", end=" | ")
-            #        print(f"{float(x_new)}, {float(y_new)}", end=" | ")
-            #        print(
-            #        f"{float(x_new) == float(x_or)}, {float(y_new) == float(y_or)}"
-            #   )
-            #       x = (pos["x"] / self.size[0]) * self.max_x + self.min_x
-            #       y = (pos["y"] / self.size[1]) * self.max_y + self.min_y
-            #       self.new_positions[self.si.image_paths[i]] = np.array([x, y])
-            # positions = {
-            #    el["data"]["id"]: el["position"] for el in elements if "position" in el
-            # }
+        @callback(
+            Output("history_slider", "max"),
+            Output("history_slider", "value"),
+            Input("dummy2", "children"),
+            State("history_slider", "value"),
+            State("history_slider", "max"),
+            prevent_initial_call=True,
+        )
+        def update_slider(_, value: int, max: int) -> tuple[int, int]:
+            """If history depth is changed, change slider to match."""
+            print("Updating Slider")
+            new_max = value + 1
 
-            # self.elements = elements
-            return "kaas3"
+            og_final_checkpoint = (
+                self.checkpoint_dir / f"{len(self.el_history) - 1}.pth"
+            )
+
+            if len(self.el_history) is not new_max:
+                idcs_to_remove = range(value, len(self.el_history) - 2)
+                print(idcs_to_remove)
+                # Remove overwritten history in el_history and remove the checkpoints.
+                self.el_history = [
+                    els
+                    for i, els in enumerate(self.el_history)
+                    if i not in idcs_to_remove
+                ]
+                for i in idcs_to_remove:
+                    old_chkpt = self.checkpoint_dir / f"{i}.pth"
+                    old_chkpt.unlink()
+
+                # Make sure that the newly created checkpoint is correctly numbered
+                og_final_checkpoint.rename(
+                    self.checkpoint_dir / f"{len(self.el_history) - 1}.pth"
+                )
+
+            return new_max, new_max
 
         @callback(
             Output("pca-graph", "elements"),
-            Input("submit-val", "n_clicks"),
+            Input("history_slider", "value"),
             prevent_initial_call=True,
         )
-        def submit_change(_) -> list:
-            # print(self.new_positions)
-            self.si.update_model(updated_positions=self.new_positions, epochs=5)
-            self.new_positions = {}
-            # print(self.new_positions)
-            self.set_elements()
-            return self.elements
-
-        clientside_callback(
-            """
-        function(n_intervals) {
-            const cy = document.querySelector('#pca-graph')._cyreg.cy;
-            if (!cy || cy._positionListenerRegistered) {
-                return window.dash_clientside.no_update;
-            }
-
-            cy.on('dragfree', 'node', () => {
-                const updated = cy.nodes().map(n => ({
-                    data: { id: n.id() },
-                    position: n.position()
-                }));
-                window.dash_clientside._lastDraggedPositions = updated;
-                window.dispatchEvent(new CustomEvent("nodes-updated", { detail: updated }));
-            });
-
-            cy._positionListenerRegistered = true;
-            return '';
-        }
-        """,
-            Output("dummy2", "children"),
-            Input("interval", "n_intervals"),
-        )
+        def set_elements_from_history(step: int) -> list[dict[str, dict | bool]]:
+            """If history slider is changed, set graph to appropriate view."""
+            print("Setting elements from history")
+            elements = self.el_history[step]
+            return elements
 
         clientside_callback(
             """
@@ -306,7 +253,7 @@ class ImageGraph:
                 }
 
                 let debounceTimeout;
-                let lastZoom = null;
+                let lastZoom = cy.zoom();
                 function updateNodeSizes() {
                     const zoom = cy.zoom()
                     if (Math.abs(zoom - lastZoom) > 0.5) {
@@ -354,17 +301,6 @@ class ImageGraph:
             Output("dummy", "children"),
             Input("interval", "n_intervals"),  # fires once at load
         )
-
-        @callback(
-            Output("node-positions", "data"),
-            Input("pca-graph", "elements"),
-            State("node-positions", "data"),
-        )
-        def sync_positions(elements, current_data):
-            updated_positions = {
-                el["data"]["id"]: el["position"] for el in elements if "position" in el
-            }
-            return updated_positions
 
         @callback(Output("pca-graph", "stylesheet"), Input("pca-graph", "zoom"))
         def update_stylesheet(zoom):
