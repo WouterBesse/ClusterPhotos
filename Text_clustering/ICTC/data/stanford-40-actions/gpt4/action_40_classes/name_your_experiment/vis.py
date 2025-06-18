@@ -130,7 +130,6 @@ def load_data():
     df['confidence_level'] = df['prob'].apply(
         lambda x: 'High' if x >= 0.7 else ('Medium' if x > 0.3 else 'Low')
     )
-    df['image_id'] = range(len(df))
     
     IMAGE_FOLDER = '/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/data/stanford-40-actions/JPEGImages'
     def encode_image(path):
@@ -144,7 +143,14 @@ def load_data():
     df['uri'] = df['filename'].apply(
         lambda fn: encode_image(os.path.join(IMAGE_FOLDER, fn))
     )
-    return df[df['uri']!=''].reset_index(drop=True)
+    
+    # Filter out images that couldn't be loaded, but preserve original order and indices
+    df = df[df['uri']!=''].copy()
+    
+    # Add a unique plot_index that corresponds to the scatter plot points
+    df['plot_index'] = range(len(df))
+    
+    return df
 
 def main():
     job_manager = JobManager()
@@ -194,12 +200,13 @@ def main():
         if data.empty:
             return px.scatter(title="No data available - Run a job first!")
         fig = px.scatter(
-            data, x='image_id', y='prob', color='cluster',
+            data, x='plot_index', y='prob', color='cluster',
             size=[15]*len(data),
             color_discrete_map=cluster_colors,
             title='📊 Probability Distribution Across Images',
-            labels={'image_id':'Image Index','prob':'Entailment Probability'},
-            custom_data=['filename','cluster']
+            labels={'plot_index':'Image Index','prob':'Entailment Probability'},
+            # Include plot_index in custom_data for accurate identification
+            custom_data=['filename','cluster','plot_index']
         )
         fig.update_traces(
             hovertemplate=(
@@ -452,9 +459,12 @@ def main():
         prevent_initial_call=True
     )
     def sel_image_store(clickData, data):
-        if not clickData:
+        if not clickData or not data:
             return None
-        return clickData['points'][0]['pointIndex']
+        
+        # Get the plot_index from the clicked point's custom_data
+        plot_index = clickData['points'][0]['customdata'][2]  # plot_index is the 3rd element
+        return plot_index
 
     @app.callback(
         Output('selected-image-area','children', allow_duplicate=True),
@@ -462,11 +472,17 @@ def main():
         State('data-store','data'),
         prevent_initial_call=True
     )
-    def display_sel_image(idx, data):
-        if idx is None or not data:
+    def display_sel_image(plot_idx, data):
+        if plot_idx is None or not data:
             return init_sel_image(data)
+        
         df = pd.DataFrame(data)
-        row = df.iloc[idx]
+        # Find the row with the matching plot_index
+        matching_rows = df[df['plot_index'] == plot_idx]
+        if matching_rows.empty:
+            return init_sel_image(data)
+        
+        row = matching_rows.iloc[0]
         return html.Div([
             html.H3("🖼️ Selected Image", style={'color':'#1f2937'}),
             html.Div([
