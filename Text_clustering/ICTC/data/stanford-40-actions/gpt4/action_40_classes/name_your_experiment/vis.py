@@ -268,10 +268,16 @@ def main():
         tiles = []
         for _, row in subset.iterrows():
             tiles.append(html.Div([
-                html.Img(src=row['uri'], style={
-                    'width':'120px','height':'120px','object-fit':'cover',
-                    'border-radius':'8px','box-shadow':'0 2px 8px rgba(0,0,0,0.1)'
-                }),
+                html.Img(
+                    src=row['uri'], 
+                    id={'type': 'cluster-image', 'index': row['plot_index']},
+                    style={
+                        'width':'120px','height':'120px','object-fit':'cover',
+                        'border-radius':'8px','box-shadow':'0 2px 8px rgba(0,0,0,0.1)',
+                        'cursor':'pointer','transition':'transform 0.2s, box-shadow 0.2s'
+                    },
+                    className='cluster-image-hover'
+                ),
                 html.P(
                     row['filename'][:15]+'...' if len(row['filename'])>15 else row['filename'],
                     style={'font-size':'10px','margin':'5px 0','text-align':'center','color':'#666'}
@@ -279,9 +285,11 @@ def main():
                 html.P(
                     f"p={row['prob']:.2f}",
                     style={'font-size':'12px','font-weight':'bold','text-align':'center',
-                           'color': cluster_colors[cluster_name]}
+                        'color': cluster_colors[cluster_name]}
                 )
             ], style={'margin':'10px','text-align':'center'}))
+        
+        # Simply return the grid without the html.Style() wrapper
         return html.Div(
             tiles,
             style={
@@ -460,7 +468,7 @@ def main():
     )
     def init_sel_image(data):
         return html.Div(
-            "💡 Click on a point in the scatter plot to view the image",
+            "💡 Click on a point in the scatter plot or an image in the cluster tabs to view and modify",
             style={'text-align':'center','font-style':'italic','color':'#666',
                    'padding':'20px','background':'white','border-radius':'8px',
                    'box-shadow':'0 2px 4px rgba(0,0,0,0.1)'}
@@ -468,17 +476,32 @@ def main():
 
     @app.callback(
         Output('selected-image-store','data'),
-        Input('scatter-plot','clickData'),
+        [Input('scatter-plot','clickData'),
+         Input({'type': 'cluster-image', 'index': dash.dependencies.ALL}, 'n_clicks')],
         State('data-store','data'),
         prevent_initial_call=True
     )
-    def sel_image_store(clickData, data):
-        if not clickData or not data:
+    def sel_image_store(clickData, cluster_clicks, data):
+        ctx = dash.callback_context
+        if not ctx.triggered:
             return None
+            
+        trigger_id = ctx.triggered[0]['prop_id']
         
-        # Get the plot_index from the clicked point's custom_data
-        plot_index = clickData['points'][0]['customdata'][2]  # plot_index is the 3rd element
-        return plot_index
+        # Handle scatter plot clicks
+        if 'scatter-plot' in trigger_id and clickData:
+            plot_index = clickData['points'][0]['customdata'][2]
+            return plot_index
+            
+        # Handle cluster image clicks
+        if 'cluster-image' in trigger_id:
+            # Extract the index from the triggered component
+            import json
+            trigger_info = json.loads(trigger_id.split('.')[0])
+            plot_index = trigger_info['index']
+            return plot_index
+            
+        return None
 
     @app.callback(
         Output('selected-image-area','children', allow_duplicate=True),
