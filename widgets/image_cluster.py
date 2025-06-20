@@ -369,42 +369,42 @@ class ImageGraph:
         #    ],
         # )
 
-        #        @callback(
-        #    Output("history_slider", "max"),
-        #    Output("history_slider", "value"),
-        #    Input("loading-output", "children"),
-        #    State("history_slider", "value"),
-        #    State("history_slider", "max"),
-        #    prevent_initial_call=True,
-        # )
-        # def update_slider(_, value: int, max: int) -> tuple[int, int]:
-        #    """If history depth is changed, change slider to match."""
-        #    print("Updating Slider")
-        #    new_max = value + 1
-        #
-        #    og_final_checkpoint = (
-        #        self.checkpoint_dir / f"{len(self.el_history) - 1}.pth"
-        #     )
-        #
-        #    if len(self.el_history) is not new_max:
-        #        idcs_to_remove = range(value, len(self.el_history) - 2)
-        #        print(idcs_to_remove)
-        #        # Remove overwritten history in el_history and remove the checkpoints.
-        #        self.el_history = [
-        #            els
-        #           for i, els in enumerate(self.el_history)
-        #           if i not in idcs_to_remove
-        #       ]
-        #                for i in idcs_to_remove:
-        #           old_chkpt = self.checkpoint_dir / f"{i}.pth"
-        #            old_chkpt.unlink()
+        @callback(
+            Output("history_slider", "max"),
+            Output("history_slider", "value"),
+            Input("progress-interval", "disabled"),
+            State("history_slider", "value"),
+            State("history_slider", "max"),
+            prevent_initial_call=True,
+        )
+        def update_slider(dis, value: int, max: int) -> tuple[int, int]:
+            """If history depth is changed, change slider to match."""
+            print("Updating Slider")
+            new_max = value + 1
 
-        # Make sure that the newly created checkpoint is correctly numbered
-        #       og_final_checkpoint.rename(
-        #        self.checkpoint_dir / f"{len(self.el_history) - 1}.pth"
-        #    )
+            og_final_checkpoint = (
+                self.checkpoint_dir / f"{len(self.el_history) - 1}.pth"
+            )
 
-        #   return new_max, new_max
+            if len(self.el_history) is not new_max:
+                idcs_to_remove = range(value, len(self.el_history) - 2)
+                print(idcs_to_remove)
+                # Remove overwritten history in el_history and remove the checkpoints.
+                self.el_history = [
+                    els
+                    for i, els in enumerate(self.el_history)
+                    if i not in idcs_to_remove
+                ]
+                for i in idcs_to_remove:
+                    old_chkpt = self.checkpoint_dir / f"{i}.pth"
+                    old_chkpt.unlink()
+
+            # Make sure that the newly created checkpoint is correctly numbered
+            og_final_checkpoint.rename(
+                self.checkpoint_dir / f"{len(self.el_history) - 1}.pth"
+            )
+
+            return new_max, new_max
 
         # @callback(
         #    Output("pca-graph", "elements"),
@@ -417,16 +417,16 @@ class ImageGraph:
         #    elements = self.el_history[step]
         #    return elements
 
-        @callback(
-            Output("history_slider", "max"),
-            Output("history_slider", "value"),
-            Input("submit-val", "n_clicks"),
-            State("history_slider", "value"),
-            prevent_initial_call=True,
-        )
-        def update_slider(_, value):
-            new_max = len(self.el_history) - 1
-            return new_max, new_max
+        # @callback(
+        #    Output("history_slider", "max"),
+        #    Output("history_slider", "value"),
+        # Input("submit-val", "n_clicks"),
+        #     State("history_slider", "value"),
+        #    prevent_initial_call=True,
+        # )
+        # d # ef update_slider(_, value):
+        #    new_max = len(self.el_history) - 1
+        #    return new_max, new_max
 
         @callback(
             Output("pca-graph", "elements", allow_duplicate=True),
