@@ -12,7 +12,7 @@ module purge
 module load 2023
 module load Anaconda3/2023.07-2
 
-cd /home/scur0274/Text_clustering/ICTC
+cd /home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC
 source activate ictc
 
 python step2a.py \
@@ -20,4 +20,4 @@ python step2a.py \
   --cl_criteria action \
   --llama False \
   --use_gpt4 True \
-  --filter "people"
+  --filter "people, building"

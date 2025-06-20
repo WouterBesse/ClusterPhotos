@@ -9,6 +9,8 @@ from utils.argument import args
 from utils.llm_utils import get_llama_response
 import openai
 
+print(args.filter)
+
 def get_gpt_response_fast(system_prompt, user_prompt, model):
     try:
         response = openai.chat.completions.create(

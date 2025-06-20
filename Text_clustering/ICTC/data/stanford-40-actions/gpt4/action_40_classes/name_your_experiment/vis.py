@@ -99,6 +99,20 @@ class JobManager:
             print(f"Error checking job status: {e}")
             return "unknown"
 
+def modify_image_description(filename, description):
+    """Call the modify_description.py script"""
+    try:
+        result = subprocess.run([
+            'python', 'modify_description.py', filename, description
+        ], capture_output=True, text=True, cwd=os.getcwd())
+        
+        if result.returncode == 0:
+            return True, f"Successfully modified description for {filename}"
+        else:
+            return False, f"Error: {result.stderr or result.stdout}"
+    except Exception as e:
+        return False, f"Exception occurred: {str(e)}"
+
 def load_data():
     PROB_FILE = 'step2a_result.txt'
     if not os.path.exists(PROB_FILE):
@@ -130,7 +144,6 @@ def load_data():
     df['confidence_level'] = df['prob'].apply(
         lambda x: 'High' if x >= 0.7 else ('Medium' if x > 0.3 else 'Low')
     )
-    df['image_id'] = range(len(df))
     
     IMAGE_FOLDER = '/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/data/stanford-40-actions/JPEGImages'
     def encode_image(path):
@@ -144,7 +157,14 @@ def load_data():
     df['uri'] = df['filename'].apply(
         lambda fn: encode_image(os.path.join(IMAGE_FOLDER, fn))
     )
-    return df[df['uri']!=''].reset_index(drop=True)
+    
+    # Filter out images that couldn't be loaded, but preserve original order and indices
+    df = df[df['uri']!=''].copy()
+    
+    # Add a unique plot_index that corresponds to the scatter plot points
+    df['plot_index'] = range(len(df))
+    
+    return df
 
 def main():
     job_manager = JobManager()
@@ -194,12 +214,13 @@ def main():
         if data.empty:
             return px.scatter(title="No data available - Run a job first!")
         fig = px.scatter(
-            data, x='image_id', y='prob', color='cluster',
+            data, x='plot_index', y='prob', color='cluster',
             size=[15]*len(data),
             color_discrete_map=cluster_colors,
             title='📊 Probability Distribution Across Images',
-            labels={'image_id':'Image Index','prob':'Entailment Probability'},
-            custom_data=['filename','cluster']
+            labels={'plot_index':'Image Index','prob':'Entailment Probability'},
+            # Include plot_index in custom_data for accurate identification
+            custom_data=['filename','cluster','plot_index']
         )
         fig.update_traces(
             hovertemplate=(
@@ -247,10 +268,16 @@ def main():
         tiles = []
         for _, row in subset.iterrows():
             tiles.append(html.Div([
-                html.Img(src=row['uri'], style={
-                    'width':'120px','height':'120px','object-fit':'cover',
-                    'border-radius':'8px','box-shadow':'0 2px 8px rgba(0,0,0,0.1)'
-                }),
+                html.Img(
+                    src=row['uri'], 
+                    id={'type': 'cluster-image', 'index': row['plot_index']},
+                    style={
+                        'width':'120px','height':'120px','object-fit':'cover',
+                        'border-radius':'8px','box-shadow':'0 2px 8px rgba(0,0,0,0.1)',
+                        'cursor':'pointer','transition':'transform 0.2s, box-shadow 0.2s'
+                    },
+                    className='cluster-image-hover'
+                ),
                 html.P(
                     row['filename'][:15]+'...' if len(row['filename'])>15 else row['filename'],
                     style={'font-size':'10px','margin':'5px 0','text-align':'center','color':'#666'}
@@ -258,9 +285,11 @@ def main():
                 html.P(
                     f"p={row['prob']:.2f}",
                     style={'font-size':'12px','font-weight':'bold','text-align':'center',
-                           'color': cluster_colors[cluster_name]}
+                        'color': cluster_colors[cluster_name]}
                 )
             ], style={'margin':'10px','text-align':'center'}))
+        
+        # Simply return the grid without the html.Style() wrapper
         return html.Div(
             tiles,
             style={
@@ -439,7 +468,7 @@ def main():
     )
     def init_sel_image(data):
         return html.Div(
-            "💡 Click on a point in the scatter plot to view the image",
+            "💡 Click on a point in the scatter plot or an image in the cluster tabs to view and modify",
             style={'text-align':'center','font-style':'italic','color':'#666',
                    'padding':'20px','background':'white','border-radius':'8px',
                    'box-shadow':'0 2px 4px rgba(0,0,0,0.1)'}
@@ -447,14 +476,32 @@ def main():
 
     @app.callback(
         Output('selected-image-store','data'),
-        Input('scatter-plot','clickData'),
+        [Input('scatter-plot','clickData'),
+         Input({'type': 'cluster-image', 'index': dash.dependencies.ALL}, 'n_clicks')],
         State('data-store','data'),
         prevent_initial_call=True
     )
-    def sel_image_store(clickData, data):
-        if not clickData:
+    def sel_image_store(clickData, cluster_clicks, data):
+        ctx = dash.callback_context
+        if not ctx.triggered:
             return None
-        return clickData['points'][0]['pointIndex']
+            
+        trigger_id = ctx.triggered[0]['prop_id']
+        
+        # Handle scatter plot clicks
+        if 'scatter-plot' in trigger_id and clickData:
+            plot_index = clickData['points'][0]['customdata'][2]
+            return plot_index
+            
+        # Handle cluster image clicks
+        if 'cluster-image' in trigger_id:
+            # Extract the index from the triggered component
+            import json
+            trigger_info = json.loads(trigger_id.split('.')[0])
+            plot_index = trigger_info['index']
+            return plot_index
+            
+        return None
 
     @app.callback(
         Output('selected-image-area','children', allow_duplicate=True),
@@ -462,11 +509,17 @@ def main():
         State('data-store','data'),
         prevent_initial_call=True
     )
-    def display_sel_image(idx, data):
-        if idx is None or not data:
+    def display_sel_image(plot_idx, data):
+        if plot_idx is None or not data:
             return init_sel_image(data)
+        
         df = pd.DataFrame(data)
-        row = df.iloc[idx]
+        # Find the row with the matching plot_index
+        matching_rows = df[df['plot_index'] == plot_idx]
+        if matching_rows.empty:
+            return init_sel_image(data)
+        
+        row = matching_rows.iloc[0]
         return html.Div([
             html.H3("🖼️ Selected Image", style={'color':'#1f2937'}),
             html.Div([
@@ -484,8 +537,83 @@ def main():
                     ]),
                     html.P([html.Strong("Probability: "), f"{row['prob']:.2f}"])
                 ], style={'margin-left':'30px'})
-            ], style={'display':'flex','align-items':'center'})
+            ], style={'display':'flex','align-items':'center'}),
+            
+            # Description modification section
+            html.Hr(style={'margin':'20px 0'}),
+            html.Div([
+                html.H4("✏️ Modify Image Description", style={'color':'#1f2937','margin-bottom':'15px'}),
+                html.Div([
+                    dcc.Textarea(
+                        id='description-input',
+                        placeholder='Enter new description for this image (e.g., "there are only 7 people in the boat")',
+                        style={
+                            'width':'100%',
+                            'height':'80px',
+                            'padding':'12px',
+                            'border-radius':'8px',
+                            'border':'2px solid #e5e7eb',
+                            'font-family':'system-ui, -apple-system',
+                            'font-size':'14px',
+                            'resize':'vertical'
+                        }
+                    ),
+                    html.Div([
+                        html.Button(
+                            '🔄 Modify Description',
+                            id='modify-description-btn',
+                            style={
+                                'background':'#8b5cf6',
+                                'color':'white',
+                                'padding':'10px 20px',
+                                'border-radius':'8px',
+                                'border':'none',
+                                'font-size':'14px',
+                                'cursor':'pointer',
+                                'margin-top':'10px'
+                            }
+                        )
+                    ]),
+                    html.Div(id='modification-result', style={'margin-top':'15px'})
+                ])
+            ], style={
+                'background':'#f8fafc',
+                'padding':'20px',
+                'border-radius':'8px',
+                'border':'1px solid #e2e8f0'
+            })
         ], style={'background':'white','padding':'25px','border-radius':'12px','box-shadow':'0 4px 6px rgba(0,0,0,0.1)'})
+
+    @app.callback(
+        Output('modification-result','children'),
+        Input('modify-description-btn','n_clicks'),
+        [State('selected-image-store','data'),
+         State('data-store','data'),
+         State('description-input','value')],
+        prevent_initial_call=True
+    )
+    def modify_description(n_clicks, plot_idx, data, description):
+        if not n_clicks or plot_idx is None or not data or not description:
+            return html.Div()
+        
+        df = pd.DataFrame(data)
+        matching_rows = df[df['plot_index'] == plot_idx]
+        if matching_rows.empty:
+            return html.Div("❌ Error: Image not found", style={'color':'#dc2626','font-weight':'bold'})
+        
+        filename = matching_rows.iloc[0]['filename']
+        success, message = modify_image_description(filename, description)
+        
+        if success:
+            return html.Div([
+                html.P("✅ " + message, style={'color':'#059669','font-weight':'bold','margin-bottom':'5px'}),
+                html.P(f"Command executed: python modify_description.py \"{filename}\" \"{description}\"", 
+                       style={'color':'#666','font-size':'12px','font-family':'monospace','background':'#f1f5f9','padding':'8px','border-radius':'4px'})
+            ])
+        else:
+            return html.Div([
+                html.P("❌ " + message, style={'color':'#dc2626','font-weight':'bold'})
+            ])
 
     @app.callback(
         Output('cluster-content','children'),
