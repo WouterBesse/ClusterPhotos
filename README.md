@@ -3,8 +3,9 @@
 Interesting way with feedback loop of clustering your holiday pics
 
 Make sure to install the local modified dash-cytoscape by either running `pip install -r requirements.txt` or running `pip install -e ./dash-cytoscape`
+Also make sure to have installed slurm, it does important stuff and without it, it won't work.
 
-# Text Clustering 
+# Text Clustering
 
 # Custom Data Clustering Visualization
 
@@ -16,14 +17,15 @@ This project provides a visualization interface for clustering your own custom d
 
 ## 🧪 Running the Visualization
 
-1. Log into Snellius.  
+1. Log into Snellius.
 2. Navigate to your experiment directory:  
-   `cd /home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment`  
+   `cd /home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment`
 3. Run the visualization script:  
-   `python vis.py`  
+   `python vis.py`
 
 This will launch the interface allowing you to:
-- Apply a custom filter (e.g. by keyword, date range, user ID, etc.)  
+
+- Apply a custom filter (e.g. by keyword, date range, user ID, etc.)
 - View clusters generated based on that filter
 
 ## 📦 Dependencies
