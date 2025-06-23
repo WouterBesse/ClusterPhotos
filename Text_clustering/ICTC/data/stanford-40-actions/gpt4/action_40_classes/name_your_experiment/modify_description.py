@@ -128,7 +128,7 @@ Please modify the original description according to the user prompt. Make sure t
     def save_modified_data(self, output_file: str = None):
         """Save the modified data back to file."""
         if output_file is None:
-            output_file = self.input_file.replace('.jsonl', '_modified.jsonl')
+            output_file = self.input_file
         
         try:
             with open(output_file, 'w', encoding='utf-8') as f:
