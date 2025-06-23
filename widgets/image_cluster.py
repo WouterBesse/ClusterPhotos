@@ -384,9 +384,9 @@ class ImageGraph:
         if updated_images:
             for filename, new_cluster in updated_images:
                 if new_cluster == "Absolute probability":
-                    description = f"this image is definitely {current_filter}"
+                    description = f"change the description so that it definitely contains {current_filter}"
                 elif new_cluster == "Zero probability":
-                    description = f"this image is definitely not {current_filter}"
+                    description = f"change the description so that the does not contain {current_filter}"
                 else:  # In between
                     description = f"this image might be {current_filter}"
                 
