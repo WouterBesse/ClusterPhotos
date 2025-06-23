@@ -17,6 +17,8 @@ from PIL.ExifTags import TAGS
 import io
 from utils.util import modify_image_description
 from functools import lru_cache
+import subprocess
+import sys
 
 
 class ImageGraph:
@@ -290,11 +292,51 @@ class ImageGraph:
 
         self.el_history.append(self.elements)
 
+    def call_modify_description_script(self, filename: str, description: str) -> bool:
+        """
+        Call the modify_description.py script with the given filename and description.
+        
+        Args:
+            filename: The image filename
+            description: The description to set
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Run the Python script with the filename and description as arguments
+            result = subprocess.run([
+                sys.executable, 
+                "/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/modify_description.py", 
+                filename, 
+                description
+            ], 
+            capture_output=True, 
+            text=True, 
+            timeout=30  # 30 second timeout
+            )
+            
+            if result.returncode == 0:
+                print(f"Successfully updated description for {filename}")
+                return True
+            else:
+                print(f"Error updating description for {filename}: {result.stderr}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            print(f"Timeout when updating description for {filename}")
+            return False
+        except Exception as e:
+            print(f"Exception when updating description for {filename}: {e}")
+            return False
+
     def update_images(
         self, data: pd.DataFrame, current_filter: str
     ) -> tuple[pd.DataFrame, bool]:
         """Update image positions and confidence values. Absolutely horrid code I made here but gotta go brrr"""
         changed = False
+        updated_images = []  # Keep track of images that were updated
+        
         # print(data)
         for i, row in data.iterrows():
             if (
@@ -310,6 +352,10 @@ class ImageGraph:
                 thresh_h = (self.size[0] / 3) / 2 - 50
                 print(thresh_l)
                 print(thresh_h)
+                
+                # Store the old cluster to check if it changed
+                old_cluster = data.at[i, "cluster"]
+                
                 if x < thresh_l:
                     data.at[i, "cluster"] = "Zero probability"
                 elif x > thresh_h:
@@ -319,19 +365,38 @@ class ImageGraph:
                     data.at[i, "cluster"] = "In between"
 
                 data.at[i, "confidence_level"] = "High"
+                
+                # Check if the cluster actually changed
+                new_cluster = data.at[i, "cluster"]
+                if old_cluster != new_cluster:
+                    updated_images.append((filename, new_cluster))
 
                 print(data.iloc[i]["cluster"])
                 print(data.iloc[i]["confidence_level"])
 
-                description = f"{current_filter}: {data.iloc[i]['cluster']}"
-                success, message = modify_image_description(
-                    data.iloc[i]["filename"], description
-                )
-
+                # Update the element position in the graph
                 for j, el_old in enumerate(self.elements):
                     if el_old["data"]["path"] == filename:
                         self.elements[j]["position"]["x"] = x
                         self.elements[j]["position"]["y"] = y
+        
+        # Call the script for all updated images
+        if updated_images:
+            for filename, new_cluster in updated_images:
+                if new_cluster == "Absolute probability":
+                    description = f"this image is definitely {current_filter}"
+                elif new_cluster == "Zero probability":
+                    description = f"this image is definitely not {current_filter}"
+                else:  # In between
+                    description = f"this image might be {current_filter}"
+                
+                # Call the external script
+                success = self.call_modify_description_script(filename, description)
+                if success:
+                    print(f"Successfully updated {filename} with description: {description}")
+                else:
+                    print(f"Failed to update {filename}")
+        
         if changed:
             self.el_history.append(self.elements)
 

@@ -23,8 +23,7 @@ from typing import Dict, List, Optional
 # Try to load python-dotenv for .env file support
 try:
     from dotenv import load_dotenv
-
-    load_dotenv()
+    load_dotenv("/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/.env")
 except ImportError:
     print(
         "Note: python-dotenv not installed. Install with 'pip install python-dotenv' to use .env files."
@@ -33,7 +32,7 @@ except ImportError:
 
 
 class ImageDescriptionModifier:
-    def __init__(self, api_key: str, input_file: str = "step1_result.jsonl"):
+    def __init__(self, api_key: str, input_file: str = "/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/step1_result.jsonl"):
         """
         Initialize the modifier with OpenAI API key and input file.
 
@@ -135,7 +134,7 @@ Please modify the original description according to the user prompt. Make sure t
     def save_modified_data(self, output_file: str = None):
         """Save the modified data back to file."""
         if output_file is None:
-            output_file = self.input_file.replace(".jsonl", "_modified.jsonl")
+            output_file = self.input_file
 
         try:
             with open(output_file, "w", encoding="utf-8") as f:
@@ -211,7 +210,7 @@ Examples:
     )
     parser.add_argument(
         "--input-file",
-        default="step1_result.jsonl",
+        default="/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/step1_result.jsonl",
         help="Input file containing image descriptions",
     )
     parser.add_argument(
@@ -223,9 +222,12 @@ Examples:
     # Get API key from argument, environment, or .env file
     import os
 
+    from dotenv import load_dotenv
+    load_dotenv("/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/.env")
+
     api_key = args.api_key or os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY")
     if not api_key:
-        print("Error: OpenAI API key required.")
+        print("Error: OpenAI API key required. other one")
         print("Options:")
         print("  1. Set API_KEY in .env file")
         print("  2. Set OPENAI_API_KEY environment variable")

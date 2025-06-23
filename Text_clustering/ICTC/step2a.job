@@ -20,4 +20,4 @@ python step2a.py \
   --cl_criteria action \
   --llama False \
   --use_gpt4 True \
-  --filter "sunny day"
+  --filter "people"

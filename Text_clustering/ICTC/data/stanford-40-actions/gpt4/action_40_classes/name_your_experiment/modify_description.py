@@ -23,13 +23,13 @@ from typing import Dict, List, Optional
 # Try to load python-dotenv for .env file support
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv("/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/.env")
 except ImportError:
     print("Note: python-dotenv not installed. Install with 'pip install python-dotenv' to use .env files.")
     pass
 
 class ImageDescriptionModifier:
-    def __init__(self, api_key: str, input_file: str = "step1_result.jsonl"):
+    def __init__(self, api_key: str, input_file: str = "/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/step1_result.jsonl"):
         """
         Initialize the modifier with OpenAI API key and input file.
         
@@ -197,7 +197,7 @@ Examples:
     parser.add_argument('image_filename', help='Name of the image file to modify')
     parser.add_argument('prompt', help='Prompt describing the desired changes')
     parser.add_argument('--api-key', help='OpenAI API key (or set OPENAI_API_KEY env var)')
-    parser.add_argument('--input-file', default='step1_result.jsonl', help='Input file containing image descriptions')
+    parser.add_argument('--input-file', default='/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/step1_result.jsonl', help='Input file containing image descriptions')
     parser.add_argument('--no-save', action='store_true', help='Don\'t save changes to file')
     
     args = parser.parse_args()
@@ -206,7 +206,7 @@ Examples:
     import os
     api_key = args.api_key or os.getenv('OPENAI_API_KEY') or os.getenv('API_KEY')
     if not api_key:
-        print("Error: OpenAI API key required.")
+        print("Error: OpenAI API key required. this one")
         print("Options:")
         print("  1. Set API_KEY in .env file")
         print("  2. Set OPENAI_API_KEY environment variable")
