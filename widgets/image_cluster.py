@@ -25,7 +25,7 @@ class ImageGraph:
         img_folder: Path,
         graph_id: str,
         data_folder: Path = Path("./data/"),
-        size=(1200, 800),
+        size=(1200, 400),
     ):
         self.image_folder = img_folder
         self.graph_id = graph_id
@@ -234,11 +234,25 @@ class ImageGraph:
     def set_elements(self, data: pd.DataFrame) -> None:
         mapping = {"Zero probability": 0, "In between": 0.5, "Absolute probability": 1}
         data["cluster_numeric"] = data["cluster"].map(mapping)
-        hor_size = self.size[0] - self.size[0] / 3
-        x_coords: np.ndarray = (
-            data["cluster_numeric"].to_numpy() * hor_size - hor_size / 2
+        # ← use the full width here
+        hor_size     = self.size[0]
+        padding_x    = 50
+        zone_width   = hor_size / 3
+        cluster_idx  = (data["cluster_numeric"] * 2).to_numpy().astype(int)
+
+        # random within each padded zone
+        random_offsets = np.random.uniform(
+            low=0,
+            high=(zone_width - 2 * padding_x),
+            size=len(cluster_idx)
         )
 
+        x_coords: np.ndarray = (
+            -hor_size / 2
+            + cluster_idx * zone_width
+            + padding_x
+            + random_offsets
+        )
         # Only on initialisation set random y values, else let them stay the same
         if self.elements:
             y_coords: np.ndarray = np.array(
