@@ -61,7 +61,7 @@ class ImageGraph:
                                         "left": "0%",
                                         "width": "33.33%",
                                         "height": "100%",
-                                        "backgroundColor": "#FFDDDD",
+                                        "backgroundColor": "#ffadad",
                                         "zIndex": 0,
                                     }
                                 ),
@@ -71,7 +71,7 @@ class ImageGraph:
                                         "left": "33.33%",
                                         "width": "33.33%",
                                         "height": "100%",
-                                        "backgroundColor": "#DDFFDD",
+                                        "backgroundColor": "#fdffb6",
                                         "zIndex": 0,
                                     }
                                 ),
@@ -81,7 +81,7 @@ class ImageGraph:
                                         "left": "66.66%",
                                         "width": "33.33%",
                                         "height": "100%",
-                                        "backgroundColor": "#DDDDFF",
+                                        "backgroundColor": "#caffbf",
                                         "zIndex": 0,
                                     }
                                 ),

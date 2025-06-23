@@ -103,6 +103,6 @@ def main(imagePath: Path) -> None:
 if __name__ == "__main__":
     imagePath = Path("./holidayimgs/archive/images/")
 
-    assert imagePath.is_dir(), f"Path {imagePath} is not a directory"
+    #assert imagePath.is_dir(), f"Path {imagePath} is not a directory"
 
     main(imagePath)
