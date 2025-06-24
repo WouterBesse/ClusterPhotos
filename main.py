@@ -42,12 +42,8 @@ def main(imagePath: Path) -> None:
             html.Div(
                 [
                     html.H1(
-                        "🖼️ Interactive Image Analysis Dashboard",
+                        "🖼️ Interactive Image Classification Dashboard",
                         style={"text-align": "center", "color": "#1f2937"},
-                    ),
-                    html.P(
-                        "Run jobs and analyze image entailment probabilities in real-time",
-                        style={"text-align": "center", "color": "#6b7280"},
                     ),
                 ],
                 style={"margin-bottom": "30px"},

@@ -5,9 +5,18 @@ import base64
 import subprocess
 
 CLUSTER_COLORS = {
-    "Absolute probability": "#2E8B57",
-    "In between": "#FF8C00",
-    "Zero probability": "#DC143C",
+    "Absolute probability": "#2e8a57",
+    "In between": "#ff8b00",
+    "Zero probability": "#dc143b",
+    "Definite Positive": "#c2ebd4",
+    "Uncertain": "#ffe2bf",
+    "Definite Negative": "#f9c1cc",
+}
+
+CUSTOM_COLORS = {
+    "Definite Positive": "#2e8a57",
+    "Uncertain": "#ff8b00",
+    "Definite Negative": "#dc143b",
 }
 
 

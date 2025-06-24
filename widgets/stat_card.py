@@ -49,7 +49,7 @@ class StatCards:
                 html.Div(
                     [
                         html.H3(f"{avg:.2f}", style={"color": "#059669"}),
-                        html.P("Average Probability", style={"color": "#666"}),
+                        html.P("Average Keyword Match", style={"color": "#666"}),
                     ],
                     style={
                         "background": "white",
@@ -89,6 +89,7 @@ class StatCards:
         def update_visuals(data):
             df = pd.DataFrame(data)
             stats = self.create_stats_cards(df)
+            return stats  # This was missing!
 
     def get_widget(self):
         return self.cards

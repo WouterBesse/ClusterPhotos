@@ -20,7 +20,6 @@ class ChartPanel:
                 "margin-bottom": "20px",
             },
         )
-        pass
 
     def create_scatter_plot(self, data):
         if data.empty:
@@ -34,7 +33,6 @@ class ChartPanel:
             color_discrete_map=CLUSTER_COLORS,
             title="📊 Probability Distribution Across Images",
             labels={"plot_index": "Image Index", "prob": "Entailment Probability"},
-            # Include plot_index in custom_data for accurate identification
             custom_data=["filename", "cluster", "plot_index"],
         )
         fig.update_traces(
@@ -55,7 +53,6 @@ class ChartPanel:
                 orientation="h", y=1.02, x=1, xanchor="right", yanchor="bottom"
             ),
         )
-        print(data)
         return fig
 
     def create_pie_chart(self, data):
@@ -65,25 +62,33 @@ class ChartPanel:
                 text="No data available", xref="paper", yref="paper", x=0.5, y=0.5
             )
             return fig
-        counts = data["cluster"].value_counts()
+
+        # Replace 'Absolute probability' with 'Definite Positive'
+        df = data.copy()
+        df['cluster'] = df['cluster'].replace({'Absolute probability': 'Definite Positive'})
+        df['cluster'] = df['cluster'].replace({'Zero probability': 'Definite Negative'})
+        df['cluster'] = df['cluster'].replace({'In between': 'Uncertain'})
+
+
+        counts = df['cluster'].value_counts()
         fig = go.Figure(
             data=[
                 go.Pie(
                     labels=counts.index,
                     values=counts.values,
                     hole=0.4,
-                    marker_colors=[CLUSTER_COLORS[l] for l in counts.index],
+                    marker_colors=[CLUSTER_COLORS.get(label, '#ccc') for label in counts.index],
                     textinfo="label+percent+value",
                     textfont_size=12,
                 )
             ]
         )
         fig.update_layout(
-            title="🥧 Cluster Distribution",
+            title="🥧 Class Distribution",
             height=400,
             annotations=[
                 dict(
-                    text="Image<br>Clusters",
+                    text="Image<br>Classes",
                     x=0.5,
                     y=0.5,
                     showarrow=False,
@@ -101,8 +106,6 @@ class ChartPanel:
         )
         def update_visuals(data: pd.DataFrame):
             df = pd.DataFrame(data)
-            print(type(df))
-            print(df)
             if not df.empty:
                 pie_chart = dcc.Graph(figure=self.create_pie_chart(df))
                 cyto = self.img_graph.get_graph(df)

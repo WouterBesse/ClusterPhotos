@@ -3,7 +3,7 @@ import dash
 import pandas as pd
 import json
 import os
-from utils.util import CLUSTER_COLORS, modify_image_description
+from utils.util import CLUSTER_COLORS, modify_image_description, CUSTOM_COLORS
 
 
 class SelectedImage:
@@ -50,7 +50,7 @@ class SelectedImage:
         )
         def init_sel_image(data):
             return html.Div(
-                "💡 Click on a point in the scatter plot or an image in the cluster tabs to view and modify",
+                "💡 Click on an image in the plot above or an image in the cluster tabs below to view and modify",
                 style={
                     "text-align": "center",
                     "font-style": "italic",
@@ -118,10 +118,27 @@ class SelectedImage:
                 return init_sel_image(data)
 
             row = matching_rows.iloc[0]
-            
+
+            # Determine display label for the cluster
+            raw_cluster = row["cluster"]
+            display_cluster = {
+                "Absolute probability": "Definite Positive",
+                "Zero probability":     "Definite Negative",
+                "In between":           "Uncertain"
+            }.get(raw_cluster, raw_cluster)
+
+            # Then use `display_cluster` when building your HTML:
+            html.Span(
+                display_cluster,
+                style={
+                    "color": CUSTOM_COLORS.get(display_cluster, '#666'),
+                    "font-weight": "bold",
+                },
+            ),
+
             # Get the image description
             image_description = self._get_image_description(row["filename"])
-            
+
             return html.Div(
                 [
                     html.H3("🖼️ Selected Image", style={"color": "#1f2937"}),
@@ -137,29 +154,23 @@ class SelectedImage:
                             ),
                             html.Div(
                                 [
-                                    html.P(
-                                        [html.Strong("Filename: "), row["filename"]]
-                                    ),
-                                    html.P(
-                                        [
-                                            html.Strong("Cluster: "),
-                                            html.Span(
-                                                row["cluster"],
-                                                style={
-                                                    "color": CLUSTER_COLORS[
-                                                        row["cluster"]
-                                                    ],
-                                                    "font-weight": "bold",
-                                                },
-                                            ),
-                                        ]
-                                    ),
-                                    html.P(
-                                        [
-                                            html.Strong("Probability: "),
-                                            f"{row['prob']:.2f}",
-                                        ]
-                                    ),
+                                    html.P([html.Strong("Filename: "), row["filename"]]),
+                                    html.P([
+                                        html.Strong("Class: "),
+                                        html.Span(
+                                            display_cluster,
+                                            style={
+                                                "color": CUSTOM_COLORS.get(
+                                                    display_cluster, '#666'
+                                                ),
+                                                "font-weight": "bold",
+                                            },
+                                        ),
+                                    ]),
+                                    html.P([
+                                        html.Strong("Probability: "),
+                                        f"{row['prob']:.2f}",
+                                    ]),
                                 ],
                                 style={"margin-left": "30px"},
                             ),
@@ -258,6 +269,7 @@ class SelectedImage:
                     "box-shadow": "0 4px 6px rgba(0,0,0,0.1)",
                 },
             )
+
 
         @callback(
             Output("modification-result", "children"),

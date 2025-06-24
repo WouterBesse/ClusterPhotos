@@ -18,7 +18,7 @@ class JobPanel:
         return html.Div(
             [
                 html.H3(
-                    "🚀 Job Control Panel",
+                    "🚀 Keyword Control Panel",
                     style={"color": "#1f2937", "margin-bottom": "20px"},
                 ),
                 html.Div(
@@ -26,7 +26,7 @@ class JobPanel:
                         html.Div(
                             [
                                 html.Label(
-                                    "Filter Value:",
+                                    "Input Keyword:",
                                     style={
                                         "font-weight": "bold",
                                         "display": "block",
@@ -50,7 +50,7 @@ class JobPanel:
                         html.Div(
                             [
                                 html.Button(
-                                    "▶️ Run Job",
+                                    "▶️ Run Classification",
                                     id="run-job-btn",
                                     style={
                                         "background": "#3b82f6",
@@ -100,7 +100,7 @@ class JobPanel:
                     html.Div(
                         [
                             html.H4(
-                                "🔍 Current Filter",
+                                "🔍 Current Keyword",
                                 style={"margin-bottom": "10px", "color": "#374151"},
                             ),
                             html.Div(
@@ -135,7 +135,7 @@ class JobPanel:
                     html.Div(
                         [
                             html.H4(
-                                "🔍 Current Filter",
+                                "🔍 Current Keyword",
                                 style={"margin-bottom": "10px", "color": "#374151"},
                             ),
                             html.Div(

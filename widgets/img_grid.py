@@ -81,7 +81,7 @@ class ImageGrid:
                 clusters = html.Div(
                     [
                         html.H2(
-                            "🖼️ Image Clusters",
+                            "🖼️ Image Classes",
                             style={"text-align": "center", "color": "#1f2937"},
                         ),
                         dcc.Tabs(
@@ -89,15 +89,15 @@ class ImageGrid:
                             value="Absolute probability",
                             children=[
                                 dcc.Tab(
-                                    label=f"✅ Absolute Probability ({len(df[df['cluster'] == 'Absolute probability'])})",
+                                    label=f"✅ Definite positive ({len(df[df['cluster'] == 'Absolute probability'])})",
                                     value="Absolute probability",
                                 ),
                                 dcc.Tab(
-                                    label=f"⚖️ In Between ({len(df[df['cluster'] == 'In between'])})",
+                                    label=f"⚖️ Uncertain ({len(df[df['cluster'] == 'In between'])})",
                                     value="In between",
                                 ),
                                 dcc.Tab(
-                                    label=f"❌ Zero Probability ({len(df[df['cluster'] == 'Zero probability'])})",
+                                    label=f"❌ Definite negative ({len(df[df['cluster'] == 'Zero probability'])})",
                                     value="Zero probability",
                                 ),
                             ],

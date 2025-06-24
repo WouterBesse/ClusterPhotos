@@ -105,8 +105,7 @@ class ImageDescriptionModifier:
         4. Preserve all other details that aren't contradicted by the prompt
         5. Make the changes feel natural and integrated into the description
 
-        You might receive a category with a boolean value such as 'sunny: True'. 
-        In this case it means that the image is that category (in this case sunny), and the description should be modified as such."""
+        """
 
         user_message = f"""Original description: "{original_description}"
 
