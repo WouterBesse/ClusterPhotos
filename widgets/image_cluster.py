@@ -247,7 +247,7 @@ class ImageGraph:
         data["cluster_numeric"] = data["cluster"].map(mapping)
         # ← use the full width here
         hor_size     = self.size[0]
-        padding_x    = 50
+        padding_x    = 135
         zone_width   = hor_size / 3
         cluster_idx  = (data["cluster_numeric"] * 2).to_numpy().astype(int)
 
