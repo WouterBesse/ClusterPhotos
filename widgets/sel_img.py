@@ -1,13 +1,44 @@
 from dash import html, callback, Output, Input, State, dcc
 import dash
 import pandas as pd
+import json
+import os
 from utils.util import CLUSTER_COLORS, modify_image_description
 
 
 class SelectedImage:
     def __init__(self) -> None:
         self.selImg = html.Div(id="selected-image-area")
+        self.descriptions_df = self._load_descriptions()
         pass
+
+    def _load_descriptions(self):
+        """Load image descriptions from the JSONL file"""
+        jsonl_path = "/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/step1_result.jsonl"
+        
+        try:
+            if os.path.exists(jsonl_path):
+                # Read JSONL file using pandas
+                descriptions_df = pd.read_json(jsonl_path, lines=True)
+                return descriptions_df
+            else:
+                print(f"Warning: JSONL file not found at {jsonl_path}")
+                return pd.DataFrame()
+        except Exception as e:
+            print(f"Error loading descriptions: {e}")
+            return pd.DataFrame()
+
+    def _get_image_description(self, filename):
+        """Get description for a specific image filename"""
+        if self.descriptions_df.empty:
+            return "No description available"
+        
+        # Find matching description by image_file
+        matching_desc = self.descriptions_df[self.descriptions_df['image_file'] == filename]
+        if not matching_desc.empty:
+            return matching_desc.iloc[0]['text']
+        else:
+            return "Description not found for this image"
 
     def register_callbacks(
         self, dataStore: tuple[str, str] = ("data-store", "data")
@@ -87,6 +118,10 @@ class SelectedImage:
                 return init_sel_image(data)
 
             row = matching_rows.iloc[0]
+            
+            # Get the image description
+            image_description = self._get_image_description(row["filename"])
+            
             return html.Div(
                 [
                     html.H3("🖼️ Selected Image", style={"color": "#1f2937"}),
@@ -131,8 +166,36 @@ class SelectedImage:
                         ],
                         style={"display": "flex", "align-items": "center"},
                     ),
-                    # Description modification section
+                    
+                    # Image Description Section
                     html.Hr(style={"margin": "20px 0"}),
+                    html.Div(
+                        [
+                            html.H4(
+                                "📝 Current Image Description",
+                                style={"color": "#1f2937", "margin-bottom": "15px"},
+                            ),
+                            html.Div(
+                                image_description,
+                                style={
+                                    "background": "#f8fafc",
+                                    "padding": "15px",
+                                    "border-radius": "8px",
+                                    "border": "1px solid #e2e8f0",
+                                    "line-height": "1.6",
+                                    "color": "#374151",
+                                    "font-size": "14px",
+                                    "max-height": "200px",
+                                    "overflow-y": "auto",
+                                }
+                            ),
+                        ],
+                        style={
+                            "margin-bottom": "20px",
+                        },
+                    ),
+                    
+                    # Description modification section
                     html.Div(
                         [
                             html.H4(
