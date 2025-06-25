@@ -127,138 +127,164 @@ class SelectedImage:
                 "In between":           "Uncertain"
             }.get(raw_cluster, raw_cluster)
 
-            # Then use `display_cluster` when building your HTML:
-            html.Span(
-                display_cluster,
-                style={
-                    "color": CUSTOM_COLORS.get(display_cluster, '#666'),
-                    "font-weight": "bold",
-                },
-            ),
-
             # Get the image description
             image_description = self._get_image_description(row["filename"])
 
             return html.Div(
                 [
-                    html.H3("🖼️ Selected Image", style={"color": "#1f2937"}),
+                    html.H3("🖼️ Selected Image", style={"color": "#1f2937", "margin-bottom": "20px"}),
+                    
+                    # Two column layout
                     html.Div(
                         [
-                            html.Img(
-                                src=row["uri"],
-                                style={
-                                    "max-width": "300px",
-                                    "border-radius": "12px",
-                                    "box-shadow": "0 4px 12px rgba(0,0,0,0.15)",
-                                },
-                            ),
+                            # Left column - Image and info
                             html.Div(
                                 [
-                                    html.P([html.Strong("Filename: "), row["filename"]]),
-                                    html.P([
-                                        html.Strong("Class: "),
-                                        html.Span(
-                                            display_cluster,
-                                            style={
-                                                "color": CUSTOM_COLORS.get(
-                                                    display_cluster, '#666'
-                                                ),
-                                                "font-weight": "bold",
-                                            },
-                                        ),
-                                    ]),
-                                    html.P([
-                                        html.Strong("Probability: "),
-                                        f"{row['prob']:.2f}",
-                                    ]),
-                                ],
-                                style={"margin-left": "30px"},
-                            ),
-                        ],
-                        style={"display": "flex", "align-items": "center"},
-                    ),
-                    
-                    # Image Description Section
-                    html.Hr(style={"margin": "20px 0"}),
-                    html.Div(
-                        [
-                            html.H4(
-                                "📝 Current Image Description",
-                                style={"color": "#1f2937", "margin-bottom": "15px"},
-                            ),
-                            html.Div(
-                                image_description,
-                                style={
-                                    "background": "#f8fafc",
-                                    "padding": "15px",
-                                    "border-radius": "8px",
-                                    "border": "1px solid #e2e8f0",
-                                    "line-height": "1.6",
-                                    "color": "#374151",
-                                    "font-size": "14px",
-                                    "max-height": "200px",
-                                    "overflow-y": "auto",
-                                }
-                            ),
-                        ],
-                        style={
-                            "margin-bottom": "20px",
-                        },
-                    ),
-                    
-                    # Description modification section
-                    html.Div(
-                        [
-                            html.H4(
-                                "✏️ Modify Image Description",
-                                style={"color": "#1f2937", "margin-bottom": "15px"},
-                            ),
-                            html.Div(
-                                [
-                                    dcc.Textarea(
-                                        id="description-input",
-                                        placeholder='Enter new description for this image (e.g., "there are only 7 people in the boat")',
+                                    # Image
+                                    html.Img(
+                                        src=row["uri"],
                                         style={
-                                            "width": "100%",
-                                            "height": "80px",
-                                            "padding": "12px",
-                                            "border-radius": "8px",
-                                            "border": "2px solid #e5e7eb",
-                                            "font-family": "system-ui, -apple-system",
-                                            "font-size": "14px",
-                                            "resize": "vertical",
+                                            "max-width": "100%",
+                                            "border-radius": "12px",
+                                            "box-shadow": "0 4px 12px rgba(0,0,0,0.15)",
                                         },
                                     ),
+                                    
+                                    # Image information below the image
                                     html.Div(
                                         [
-                                            html.Button(
-                                                "🔄 Modify Description",
-                                                id="modify-description-btn",
-                                                style={
-                                                    "background": "#8b5cf6",
-                                                    "color": "white",
-                                                    "padding": "10px 20px",
-                                                    "border-radius": "8px",
-                                                    "border": "none",
-                                                    "font-size": "14px",
-                                                    "cursor": "pointer",
-                                                    "margin-top": "10px",
-                                                },
-                                            )
-                                        ]
+                                            html.P([html.Strong("Filename: "), row["filename"]]),
+                                            html.P([
+                                                html.Strong("Class: "),
+                                                html.Span(
+                                                    display_cluster,
+                                                    style={
+                                                        "color": CUSTOM_COLORS.get(
+                                                            display_cluster, '#666'
+                                                        ),
+                                                        "font-weight": "bold",
+                                                    },
+                                                ),
+                                            ]),
+                                            html.P([
+                                                html.Strong("Probability: "),
+                                                f"{row['prob']:.2f}",
+                                            ]),
+                                        ],
+                                        style={
+                                            "margin-top": "15px",
+                                            "padding": "15px",
+                                            "background": "#f8fafc",
+                                            "border-radius": "8px",
+                                            "border": "1px solid #e2e8f0",
+                                        },
                                     ),
+                                ],
+                                style={
+                                    "width": "48%",
+                                    "display": "inline-block",
+                                    "vertical-align": "top",
+                                },
+                            ),
+                            
+                            # Right column - Description sections
+                            html.Div(
+                                [
+                                    # Current Image Description Section
                                     html.Div(
-                                        id="modification-result",
-                                        style={"margin-top": "15px"},
+                                        [
+                                            html.H4(
+                                                "📝 Current Image Description",
+                                                style={"color": "#1f2937", "margin-bottom": "15px"},
+                                            ),
+                                            html.Div(
+                                                image_description,
+                                                style={
+                                                    "background": "#f8fafc",
+                                                    "padding": "15px",
+                                                    "border-radius": "8px",
+                                                    "border": "1px solid #e2e8f0",
+                                                    "line-height": "1.6",
+                                                    "color": "#374151",
+                                                    "font-size": "14px",
+                                                    "max-height": "200px",
+                                                    "overflow-y": "auto",
+                                                }
+                                            ),
+                                        ],
+                                        style={
+                                            "margin-bottom": "25px",
+                                        },
                                     ),
-                                ]
+                                    
+                                    # Description modification section
+                                    html.Div(
+                                        [
+                                            html.H4(
+                                                "✏️ Modify Image Description",
+                                                style={"color": "#1f2937", "margin-bottom": "15px"},
+                                            ),
+                                            html.Div(
+                                                [
+                                                    dcc.Textarea(
+                                                        id="description-input",
+                                                        placeholder='Enter new description for this image (e.g., "there are only 7 people in the boat")',
+                                                        style={
+                                                            "width": "100%",
+                                                            "height": "80px",
+                                                            "padding": "12px",
+                                                            "border-radius": "8px",
+                                                            "border": "2px solid #e5e7eb",
+                                                            "font-family": "system-ui, -apple-system",
+                                                            "font-size": "14px",
+                                                            "resize": "vertical",
+                                                        },
+                                                    ),
+                                                    html.Div(
+                                                        [
+                                                            html.Button(
+                                                                "🔄 Modify Description",
+                                                                id="modify-description-btn",
+                                                                style={
+                                                                    "background": "#8b5cf6",
+                                                                    "color": "white",
+                                                                    "padding": "10px 20px",
+                                                                    "border-radius": "8px",
+                                                                    "border": "none",
+                                                                    "font-size": "14px",
+                                                                    "cursor": "pointer",
+                                                                    "margin-top": "10px",
+                                                                },
+                                                            )
+                                                        ]
+                                                    ),
+                                                    html.Div(
+                                                        id="modification-result",
+                                                        style={"margin-top": "15px"},
+                                                    ),
+                                                ]
+                                            ),
+                                        ],
+                                        style={
+                                            "background": "#f8fafc",
+                                            "padding": "20px",
+                                            "border-radius": "8px",
+                                            "border": "1px solid #e2e8f0",
+                                        },
+                                    ),
+                                ],
+                                style={
+                                    "width": "48%",
+                                    "display": "inline-block",
+                                    "vertical-align": "top",
+                                    "margin-left": "4%",
+                                },
                             ),
                         ],
                         style={
-                            "background": "#f8fafc",
-                            "padding": "20px",
-                            "border-radius": "8px",
-                            "border": "1px solid #e2e8f0",
+                            "width": "100%",
+                            "display": "flex",
+                            "justify-content": "space-between",
                         },
                     ),
                 ],

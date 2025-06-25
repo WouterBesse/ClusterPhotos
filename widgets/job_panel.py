@@ -38,7 +38,7 @@ class JobPanel:
                                     type="text",
                                     value="sunny day",
                                     style={
-                                        "width": "100%",
+                                        "width": "95%",
                                         "padding": "10px",
                                         "border-radius": "8px",
                                         "border": "2px solid #e5e7eb",
@@ -286,7 +286,7 @@ class JobPanel:
                         "width": "48%",
                         "display": "inline-block",
                         "vertical-align": "top",
-                        "margin-left": "1%",
+                        "margin-left": "0%",
                         "margin-top": "3.4%",
                     }
                 ),
