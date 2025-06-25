@@ -1,5 +1,5 @@
 Image file-IMG-20250613-WA0009.jpg; {"entailment_probability": 0.0}
-Image file-IMG-20250613-WA0012.jpg; {"entailment_probability": 0.1}
+Image file-IMG-20250613-WA0012.jpg; {"entailment_probability": 0.0}
 Image file-IMG-20250613-WA0011.jpg; {"entailment_probability": 1.0}
 Image file-IMG-20250613-WA0005.jpg; {"entailment_probability": 1.0}
 Image file-IMG-20250613-WA0014.jpg; {"entailment_probability": 1.0}

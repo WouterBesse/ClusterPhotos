@@ -103,9 +103,7 @@ class ImageDescriptionModifier:
         2. Maintain similar length and detail level
         3. Only change what the prompt specifically requests
         4. Preserve all other details that aren't contradicted by the prompt
-        5. Make the changes feel natural and integrated into the description
-
-        """
+        5. Make the changes feel natural and integrated into the description"""
 
         user_message = f"""Original description: "{original_description}"
 

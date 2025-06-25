@@ -265,7 +265,41 @@ class JobPanel:
             )
 
     def get_widget(self):
-        return self.panel, self.filter_disp
+        """Returns widgets in a side-by-side layout"""
+        # Create the side-by-side container
+        side_by_side_container = html.Div(
+            [
+                # Left column - Job Control Panel
+                html.Div(
+                    [self.panel],
+                    style={
+                        "width": "48%",
+                        "display": "inline-block",
+                        "vertical-align": "top",
+                        "margin-right": "2%",
+                    }
+                ),
+                # Right column - Current Filter Display
+                html.Div(
+                    [self.filter_disp],
+                    style={
+                        "width": "48%",
+                        "display": "inline-block",
+                        "vertical-align": "top",
+                        "margin-left": "1%",
+                        "margin-top": "3.4%",
+                    }
+                ),
+            ],
+            style={
+                "width": "100%",
+                "display": "block",
+            }
+        )
+        
+        # Return the container and an empty div for backward compatibility
+        # This avoids duplicate IDs since filter_disp is already in the container
+        return side_by_side_container, html.Div()
 
     def get_store(self):
         return self.filter_store
