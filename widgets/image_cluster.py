@@ -246,23 +246,18 @@ class ImageGraph:
         mapping = {"Zero probability": 0, "In between": 0.5, "Absolute probability": 1}
         data["cluster_numeric"] = data["cluster"].map(mapping)
         # ← use the full width here
-        hor_size     = self.size[0]
-        padding_x    = 135
-        zone_width   = hor_size / 3
-        cluster_idx  = (data["cluster_numeric"] * 2).to_numpy().astype(int)
+        hor_size = self.size[0]
+        padding_x = 135
+        zone_width = hor_size / 3
+        cluster_idx = (data["cluster_numeric"] * 2).to_numpy().astype(int)
 
         # random within each padded zone
         random_offsets = np.random.uniform(
-            low=0,
-            high=(zone_width - 2 * padding_x),
-            size=len(cluster_idx)
+            low=0, high=(zone_width - 2 * padding_x), size=len(cluster_idx)
         )
 
         x_coords: np.ndarray = (
-            -hor_size / 2
-            + cluster_idx * zone_width
-            + padding_x
-            + random_offsets
+            -hor_size / 2 + cluster_idx * zone_width + padding_x + random_offsets
         )
         # Only on initialisation set random y values, else let them stay the same
         if self.elements:
@@ -304,34 +299,35 @@ class ImageGraph:
     def call_modify_description_script(self, filename: str, description: str) -> bool:
         """
         Call the modify_description.py script with the given filename and description.
-        
+
         Args:
             filename: The image filename
             description: The description to set
-            
+
         Returns:
             bool: True if successful, False otherwise
         """
         try:
             # Run the Python script with the filename and description as arguments
-            result = subprocess.run([
-                sys.executable, 
-                "/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/modify_description.py", 
-                filename, 
-                description
-            ], 
-            capture_output=True, 
-            text=True, 
-            timeout=30  # 30 second timeout
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "./modify_description.py",
+                    filename,
+                    description,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,  # 30 second timeout
             )
-            
+
             if result.returncode == 0:
                 print(f"Successfully updated description for {filename}")
                 return True
             else:
                 print(f"Error updating description for {filename}: {result.stderr}")
                 return False
-                
+
         except subprocess.TimeoutExpired:
             print(f"Timeout when updating description for {filename}")
             return False
@@ -345,7 +341,7 @@ class ImageGraph:
         """Update image positions and confidence values. Absolutely horrid code I made here but gotta go brrr"""
         changed = False
         updated_images = []  # Keep track of images that were updated
-        
+
         # print(data)
         for i, row in data.iterrows():
             if (
@@ -361,10 +357,10 @@ class ImageGraph:
                 thresh_h = (self.size[0] / 3) / 2 - 50
                 print(thresh_l)
                 print(thresh_h)
-                
+
                 # Store the old cluster to check if it changed
                 old_cluster = data.at[i, "cluster"]
-                
+
                 if x < thresh_l:
                     data.at[i, "cluster"] = "Zero probability"
                 elif x > thresh_h:
@@ -374,7 +370,7 @@ class ImageGraph:
                     data.at[i, "cluster"] = "In between"
 
                 data.at[i, "confidence_level"] = "High"
-                
+
                 # Check if the cluster actually changed
                 new_cluster = data.at[i, "cluster"]
                 if old_cluster != new_cluster:
@@ -388,7 +384,7 @@ class ImageGraph:
                     if el_old["data"]["path"] == filename:
                         self.elements[j]["position"]["x"] = x
                         self.elements[j]["position"]["y"] = y
-        
+
         # Call the script for all updated images
         if updated_images:
             for filename, new_cluster in updated_images:
@@ -398,14 +394,16 @@ class ImageGraph:
                     description = f"change the description so that the does not contain {current_filter}"
                 else:  # In between
                     description = f"this image might be {current_filter}"
-                
+
                 # Call the external script
                 success = self.call_modify_description_script(filename, description)
                 if success:
-                    print(f"Successfully updated {filename} with description: {description}")
+                    print(
+                        f"Successfully updated {filename} with description: {description}"
+                    )
                 else:
                     print(f"Failed to update {filename}")
-        
+
         if changed:
             self.el_history.append(self.elements)
 
@@ -482,3 +480,4 @@ class ImageGraph:
         self.create_graph()
 
         return html.Div(self.cyto)
+

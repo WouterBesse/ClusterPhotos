@@ -19,11 +19,14 @@ import argparse
 import os
 from openai import OpenAI
 from typing import Dict, List, Optional
+import difflib
+import copy
 
 # Try to load python-dotenv for .env file support
 try:
     from dotenv import load_dotenv
-    load_dotenv("/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/.env")
+
+    load_dotenv("./Text_clustering/ICTC/.env")
 except ImportError:
     print(
         "Note: python-dotenv not installed. Install with 'pip install python-dotenv' to use .env files."
@@ -32,7 +35,11 @@ except ImportError:
 
 
 class ImageDescriptionModifier:
-    def __init__(self, api_key: str, input_file: str = "/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/step1_result.jsonl"):
+    def __init__(
+        self,
+        api_key: str,
+        input_file: str = "./Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/step1_result.jsonl",
+    ):
         """
         Initialize the modifier with OpenAI API key and input file.
 
@@ -43,6 +50,8 @@ class ImageDescriptionModifier:
         self.client = OpenAI(api_key=api_key)
         self.input_file = input_file
         self.data = self.load_data()
+        self.changed_data = copy.deepcopy(self.data)
+        self.save_modified_data()
 
     def load_data(self) -> List[Dict]:
         """Load image descriptions from the input file."""
@@ -67,6 +76,35 @@ class ImageDescriptionModifier:
         except Exception as e:
             print(f"Error loading data: {e}")
             sys.exit(1)
+
+    def generate_diff_string(self, text1: str, text2: str) -> str:
+        """
+        Generates a diff string between two texts, marking removed and added parts.
+        Similar to git diff output, but simplified with custom tags.
+
+        Args:
+            text1: The original text.
+            text2: The modified text.
+
+        Returns:
+            A string showing the differences with <removed> and <added> tags.
+        """
+        d = difflib.Differ()
+        diff = d.compare(text1.splitlines(), text2.splitlines())
+
+        output = []
+        for line in diff:
+            if line.startswith("- "):
+                output.append(f"<removed>{line[2:]}</removed>")
+            elif line.startswith("+ "):
+                output.append(f"<added>{line[2:]}</added>")
+            elif line.startswith("? "):
+                # Ignore lines showing inter-line differences (like changed characters within a line)
+                pass
+            else:
+                output.append(line[2:])  # Unchanged lines
+
+        return "\n".join(output)
 
     def find_image_description(self, image_filename: str) -> Optional[Dict]:
         """
@@ -138,6 +176,9 @@ Please modify the original description according to the user prompt. Make sure t
                 for item in self.data:
                     f.write(json.dumps(item, ensure_ascii=False) + "\n")
             print(f"Modified data saved to: {output_file}")
+            with open("./diff_descs.jsonl", "w", encoding="utf-8") as f:
+                for item in self.changed_data:
+                    f.write(json.dumps(item, ensure_ascii=False) + "\n")
         except Exception as e:
             print(f"Error saving data: {e}")
 
@@ -173,11 +214,15 @@ Please modify the original description according to the user prompt. Make sure t
 
         # Modify the description
         modified_description = self.modify_description(original_description, prompt)
+        diff_description = self.generate_diff_string(
+            original_description, modified_description
+        )
 
         # Update the data
-        for item in self.data:
+        for item, itemdiff in zip(self.data, self.changed_data):
             if item.get("image_file") == image_filename:
                 item["text"] = modified_description
+                itemdiff["text"] = diff_description
                 break
 
         print(f"\nModified description: {modified_description}")
@@ -207,7 +252,7 @@ Examples:
     )
     parser.add_argument(
         "--input-file",
-        default="/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/step1_result.jsonl",
+        default="./Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/step1_result.jsonl",
         help="Input file containing image descriptions",
     )
     parser.add_argument(
@@ -220,7 +265,8 @@ Examples:
     import os
 
     from dotenv import load_dotenv
-    load_dotenv("/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/.env")
+
+    load_dotenv("./Text_clustering/ICTC/.env")
 
     api_key = args.api_key or os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY")
     if not api_key:

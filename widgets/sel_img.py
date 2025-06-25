@@ -3,6 +3,7 @@ import dash
 import pandas as pd
 import json
 import os
+import re
 from utils.util import CLUSTER_COLORS, modify_image_description, CUSTOM_COLORS
 
 
@@ -14,8 +15,8 @@ class SelectedImage:
 
     def _load_descriptions(self):
         """Load image descriptions from the JSONL file"""
-        jsonl_path = "/home/scur0274/Wouter_repo/ClusterPhotos/Text_clustering/ICTC/data/stanford-40-actions/gpt4/action_40_classes/name_your_experiment/step1_result.jsonl"
-        
+        jsonl_path = "./diff_descs.jsonl"
+
         try:
             if os.path.exists(jsonl_path):
                 # Read JSONL file using pandas
@@ -32,13 +33,64 @@ class SelectedImage:
         """Get description for a specific image filename"""
         if self.descriptions_df.empty:
             return "No description available"
-        
+
         # Find matching description by image_file
-        matching_desc = self.descriptions_df[self.descriptions_df['image_file'] == filename]
+        matching_desc = self.descriptions_df[
+            self.descriptions_df["image_file"] == filename
+        ]
         if not matching_desc.empty:
-            return matching_desc.iloc[0]['text']
+            return matching_desc.iloc[0]["text"]
         else:
             return "Description not found for this image"
+
+    def _parse_and_style_diff(self, diff_string: str) -> list:
+        """
+        Parses the diff string with <removed> and <added> tags
+        and returns a list of Dash HTML components with styling.
+        """
+        elements = []
+        # Split by <removed> and <added> tags, keeping the delimiters
+        parts = re.split(
+            r"(<removed>.*?</removed>|<added>.*?</added>)", diff_string, flags=re.DOTALL
+        )
+
+        for part in parts:
+            if part.startswith("<removed>") and part.endswith("</removed>"):
+                text = part[len("<removed>") : -len("</removed>")]
+                # Split by newlines to apply strikethrough to each line
+                for line in text.splitlines():
+                    elements.append(
+                        html.Span(
+                            line,
+                            style={
+                                "color": "red",
+                                "text-decoration": "line-through",
+                                "display": "inline",
+                                "white-space": "pre-wrap",  # Ensure each line takes its own space
+                            },
+                            className="removed-text",
+                        )
+                    )
+            elif part.startswith("<added>") and part.endswith("</added>"):
+                text = part[len("<added>") : -len("</added>")]
+                # Split by newlines to apply green to each line
+                for line in text.splitlines():
+                    elements.append(
+                        html.Span(
+                            line,
+                            style={
+                                "color": "green",
+                                "display": "inline",
+                                "white-space": "pre-wrap",  # Ensure each line takes its own space
+                            },
+                            className="added-text",
+                        )
+                    )
+            else:
+                # Regular text, split by newlines for proper rendering
+                for line in part.splitlines():
+                    elements.append(html.Span(line, style={"display": "inline"}))
+        return elements
 
     def register_callbacks(
         self, dataStore: tuple[str, str] = ("data-store", "data")
@@ -80,6 +132,7 @@ class SelectedImage:
                 return None
 
             trigger_id = ctx.triggered[0]["prop_id"]
+            print(trigger_id)
 
             # Handle scatter plot clicks
             # Handle Cytoscape node clicks
@@ -95,6 +148,7 @@ class SelectedImage:
                 # Extract the index from the triggered component
                 import json
 
+                print(trigger_id.split(".")[0])
                 trigger_info = json.loads(trigger_id.split(".")[0])
                 plot_index = trigger_info["index"]
                 return plot_index
@@ -123,17 +177,20 @@ class SelectedImage:
             raw_cluster = row["cluster"]
             display_cluster = {
                 "Absolute probability": "Definite Positive",
-                "Zero probability":     "Definite Negative",
-                "In between":           "Uncertain"
+                "Zero probability": "Definite Negative",
+                "In between": "Uncertain",
             }.get(raw_cluster, raw_cluster)
 
             # Get the image description
             image_description = self._get_image_description(row["filename"])
+            styled_description_elements = self._parse_and_style_diff(image_description)
 
             return html.Div(
                 [
-                    html.H3("🖼️ Selected Image", style={"color": "#1f2937", "margin-bottom": "20px"}),
-                    
+                    html.H3(
+                        "🖼️ Selected Image",
+                        style={"color": "#1f2937", "margin-bottom": "20px"},
+                    ),
                     # Two column layout
                     html.Div(
                         [
@@ -149,27 +206,35 @@ class SelectedImage:
                                             "box-shadow": "0 4px 12px rgba(0,0,0,0.15)",
                                         },
                                     ),
-                                    
                                     # Image information below the image
                                     html.Div(
                                         [
-                                            html.P([html.Strong("Filename: "), row["filename"]]),
-                                            html.P([
-                                                html.Strong("Class: "),
-                                                html.Span(
-                                                    display_cluster,
-                                                    style={
-                                                        "color": CUSTOM_COLORS.get(
-                                                            display_cluster, '#666'
-                                                        ),
-                                                        "font-weight": "bold",
-                                                    },
-                                                ),
-                                            ]),
-                                            html.P([
-                                                html.Strong("Probability: "),
-                                                f"{row['prob']:.2f}",
-                                            ]),
+                                            html.P(
+                                                [
+                                                    html.Strong("Filename: "),
+                                                    row["filename"],
+                                                ]
+                                            ),
+                                            html.P(
+                                                [
+                                                    html.Strong("Class: "),
+                                                    html.Span(
+                                                        display_cluster,
+                                                        style={
+                                                            "color": CUSTOM_COLORS.get(
+                                                                display_cluster, "#666"
+                                                            ),
+                                                            "font-weight": "bold",
+                                                        },
+                                                    ),
+                                                ]
+                                            ),
+                                            html.P(
+                                                [
+                                                    html.Strong("Probability: "),
+                                                    f"{row['prob']:.2f}",
+                                                ]
+                                            ),
                                         ],
                                         style={
                                             "margin-top": "15px",
@@ -186,7 +251,6 @@ class SelectedImage:
                                     "vertical-align": "top",
                                 },
                             ),
-                            
                             # Right column - Description sections
                             html.Div(
                                 [
@@ -195,10 +259,13 @@ class SelectedImage:
                                         [
                                             html.H4(
                                                 "📝 Current Image Description",
-                                                style={"color": "#1f2937", "margin-bottom": "15px"},
+                                                style={
+                                                    "color": "#1f2937",
+                                                    "margin-bottom": "15px",
+                                                },
                                             ),
                                             html.Div(
-                                                image_description,
+                                                styled_description_elements,
                                                 style={
                                                     "background": "#f8fafc",
                                                     "padding": "15px",
@@ -209,20 +276,23 @@ class SelectedImage:
                                                     "font-size": "14px",
                                                     "max-height": "200px",
                                                     "overflow-y": "auto",
-                                                }
+                                                    "white-space": "pre-wrap",
+                                                },
                                             ),
                                         ],
                                         style={
                                             "margin-bottom": "25px",
                                         },
                                     ),
-                                    
                                     # Description modification section
                                     html.Div(
                                         [
                                             html.H4(
                                                 "✏️ Modify Image Description",
-                                                style={"color": "#1f2937", "margin-bottom": "15px"},
+                                                style={
+                                                    "color": "#1f2937",
+                                                    "margin-bottom": "15px",
+                                                },
                                             ),
                                             html.Div(
                                                 [
@@ -296,7 +366,6 @@ class SelectedImage:
                 },
             )
 
-
         @callback(
             Output("modification-result", "children"),
             Input("modify-description-btn", "n_clicks"),
@@ -358,3 +427,4 @@ class SelectedImage:
 
     def get_widget(self):
         return self.selImg
+
